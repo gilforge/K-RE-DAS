@@ -47,25 +47,43 @@ for i in range(10):
         row.append((grid_x + j * cell_size, grid_y + i * cell_size))
     positions.append(row)
 
-
+# Fonction qui vérifie l'alignement de 4 symboles
 def check_alignments(grid):
+    to_delete = []
     for i in range(10):
         for j in range(10):
             # Vérifier l'alignement horizontal
             if j <= 6:
                 for k in range(1, 7):
-                    if grid[i][j] != grid[i][j+k]:
+                    if grid[i][j] is None or grid[i][j] != grid[i][j+k]:
                         break
                     if k >= 3:
-                        return (i, j), 'horizontal'
+                        for l in range(4):
+                            to_delete.append((i, j + l))
             # Vérifier l'alignement vertical
             if i <= 6:
                 for k in range(1, 7):
-                    if grid[i][j] != grid[i+k][j]:
+                    if grid[i][j] is None or grid[i][j] != grid[i+k][j]:
                         break
                     if k >= 3:
-                        return (i, j), 'vertical'
-    return None, None
+                        for l in range(4):
+                            to_delete.append((i + l, j))
+    return to_delete
+
+# Fonction qui dessine la grille
+def draw_grid():
+    for i in range(10):
+        for j in range(10):
+            symbol = grid[i][j]
+            if symbol is not None:
+                pos = positions[i][j]
+                window.blit(symbols[symbol], pos)
+                if (i, j) == selected_pos1:  # If this is the selected symbol
+                    pygame.draw.rect(window, (0, 0, 0), (grid_x + cell_x * cell_size, grid_y + cell_y * cell_size, cell_size, cell_size), 2)
+
+                # Si le symbole est à supprimer, dessinez une surbrillance
+                if (i, j) in to_delete:
+                    pygame.draw.rect(window, (255, 255, 255), (pos[0], pos[1], cell_size, cell_size), 3)
 
 
 # Variable pour suivre le symbole actuellement sélectionné et sa position
@@ -143,38 +161,35 @@ while running:
                     # Swap the symbols
                     grid[selected_pos1[1]][selected_pos1[0]] = selected_symbol2
                     grid[selected_pos2[1]][selected_pos2[0]] = selected_symbol1
+
+                    draw_grid()  # Redraw the grid after swapping the symbols
+                    pygame.display.flip()  # Update the display to show the swapped symbols
+
                     # Reset the selected symbols and positions
                     selected_symbol1 = None
                     selected_pos1 = None
                     selected_symbol2 = None
                     selected_pos2 = None
 
+
                     # Vérifier les alignements après le mouvement
-                    alignment_pos, alignment_dir = check_alignments(grid)
-                    if alignment_pos is not None:
-                        print(f"Alignment found at {alignment_pos} in {alignment_dir} direction")
-                        score += 1
+                    to_delete = check_alignments(grid)
+                    if to_delete:  # Si la liste n'est pas vide
+                        print(f"Alignments found: {to_delete}")
+                        score += len(to_delete) // 4  # Augmenter le score pour chaque alignement trouvé
 
-                        alignment_pos, alignment_dir = check_alignments(grid)
-                        if alignment_pos is not None:
-                            print(f"Alignment found at {alignment_pos} in {alignment_dir} direction")
-                            # Ajouter les symboles alignés à la liste to_delete
-                            if alignment_dir == 'horizontal':
-                                for i in range(4):
-                                    to_delete.append((alignment_pos[0], alignment_pos[1] + i))
-                            else:  # alignment_dir == 'vertical'
-                                for i in range(4):
-                                    to_delete.append((alignment_pos[0] + i, alignment_pos[1]))
+                        # Mettre en surbrillance les symboles à supprimer
+                        for pos in to_delete:
+                            pygame.draw.rect(window, (255, 255, 255), (positions[pos[0]][pos[1]][0], positions[pos[0]][pos[1]][1], cell_size, cell_size), 3)
+                        pygame.display.flip()  # Mettre à jour l'affichage pour montrer la surbrillance
+                        pygame.time.wait(500)  # Attendre 500 millisecondes (0.5 seconde)
 
-                            # Supprimer les symboles à supprimer de la grille
-                            for pos in to_delete:
-                                pygame.draw.rect(window, (255, 255, 255), (positions[pos[0]][pos[1]][0], positions[pos[0]][pos[1]][1], cell_size, cell_size), 3)
-                            pygame.display.flip()  # Mettre à jour l'affichage pour montrer la surbrillance
-                            pygame.time.wait(500)  # Attendre 500 millisecondes (0.5 seconde)
-                            for pos in to_delete:
-                                grid[pos[0]][pos[1]] = None
-                            # Vider la liste to_delete
-                            to_delete.clear()
+                        # Supprimer les symboles à supprimer de la grille
+                        for pos in to_delete:
+                            grid[pos[0]][pos[1]] = None
+
+                        # Vider la liste to_delete
+                        to_delete.clear()
 
 # Quitter Pygame une fois la boucle terminée
 pygame.quit()
