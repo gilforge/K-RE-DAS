@@ -172,7 +172,7 @@ while running:
 
     to_delete = []
 
-    # Dessiner la grille
+    # Dessiner la grille pour qu'elle soit belle
     for i in range(10):
         for j in range(10):
             symbol = grid[i][j]
