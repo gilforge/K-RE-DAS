@@ -11,11 +11,16 @@ game_title = "K-RE-DAS"
 game_author = "by Gilles Aubin"
 score = 0
 margin = 50  # Espace pour le titre et le score
-window_size = (600, 600)  # Taille de la fenêtre
+window_size = (600, 650)  # Taille de la fenêtre
 cell_size = (window_size[0] - 2 * margin) // 10  # Taille de chaque cellule de la grille
 
+# Couleurs A DEFINIR
+color_Black = (0, 0, 0)
+color_White = (204, 204, 204)
+
 # Créer la fenêtre
-window = pygame.display.set_mode(window_size)
+window = pygame.display.set_mode(window_size) # fenêtré
+# window = pygame.display.set_mode(window_size, pygame.SCALED|pygame.FULLSCREEN) # plein écran
 
 # Charger les images
 symbols = {
@@ -50,24 +55,31 @@ for i in range(10):
 # Fonction qui vérifie l'alignement de 4 symboles
 def check_alignments(grid):
     to_delete = []
+    global score
     for i in range(10):
         for j in range(10):
             # Vérifier l'alignement horizontal
             if j <= 6:
                 for k in range(1, 7):
-                    if grid[i][j] is None or grid[i][j] != grid[i][j+k]:
+                    # if j+k >= 10 or grid[i][j] is None or (j+k < 10 and grid[i][j] != grid[i][j+k]):
+                    if j+k >= 10 or grid[i][j] is None or grid[i][j] != grid[i][j+k]:
                         break
                     if k >= 3:
                         for l in range(4):
                             to_delete.append((i, j + l))
+                            print(f"Boucle 1 > i = {i} | j = {j} | k = {k} | HORZ")
+                        score += k
             # Vérifier l'alignement vertical
             if i <= 6:
                 for k in range(1, 7):
-                    if grid[i][j] is None or grid[i][j] != grid[i+k][j]:
+                    # if j+k >= 10 or grid[i][j] is None or (j+k < 10 and grid[i][j] != grid[i][j+k]):
+                    if j+k >= 10 or grid[i][j] is None or grid[i][j] != grid[i+k][j]:
                         break
                     if k >= 3:
                         for l in range(4):
                             to_delete.append((i + l, j))
+                            print(f"Boucle 2 > i = {i} | j = {j} | k = {k} | VERT")
+                        score += k
     return to_delete
 
 # Fonction qui dessine la grille
@@ -85,6 +97,36 @@ def draw_grid():
                 if (i, j) in to_delete:
                     pygame.draw.rect(window, (255, 255, 255), (pos[0], pos[1], cell_size, cell_size), 3)
 
+# Dessiner le bouton
+width_new = 200
+height_new = 40
+posX_new = 50
+posY_new = 590
+posX_text_new = posX_new + 10
+posY_text_new = posY_new + 5
+
+def draw_button():
+    pygame.draw.rect(window, color_White, (posX_new, posY_new, width_new, height_new),1)
+    font_new = pygame.font.Font("font/JetBrainsMono-Bold.ttf", 20)
+    text_new = font_new.render("Nouveau", True, color_White) 
+    window.blit(text_new, (posX_text_new, posY_text_new)) 
+
+# Détecter le clic sur le bouton
+def click_on_button(mouse_pos):
+    if posX_new < mouse_pos[0] < (posX_new + width_new) and posY_new < mouse_pos[1] < (posY_new + height_new): 
+        return True
+    return False
+
+# Réinitialiser le jeu
+def reset_game():
+    global grid, score
+    grid = []
+    for i in range(10):
+        row = []
+        for j in range(10):
+            row.append(random.choice(list(symbols.keys())))
+        grid.append(row)
+    score = 0
 
 # Variable pour suivre le symbole actuellement sélectionné et sa position
 selected_symbol1 = None
@@ -97,7 +139,8 @@ running = True
 while running:
     # Remplir l'écran avec la couleur de fond
     image_fond = pygame.image.load("img/tapis.jpg")
-    fond = image_fond.convert()
+    fond = pygame.transform.scale(image_fond, window_size)
+    # fond = image_fond.convert()
     window.blit(fond,(0,0))
 
     # Dessiner le titre
@@ -114,6 +157,15 @@ while running:
     fontScore = pygame.font.Font("font/JetBrainsMono-Bold.ttf", 24)
     textScore = fontScore.render(str(score), True, (200, 200, 200))
     window.blit(textScore, (window_size[0] - textScore.get_width() - margin, margin // 2 - textScore.get_height() // 2 ))
+
+    draw_button()
+    # for event in pygame.event.get():
+    #     if event.type == pygame.QUIT:
+    #         running = False
+    #     elif event.type == pygame.MOUSEBUTTONUP:
+    #         mouse_pos = pygame.mouse.get_pos()
+    #         if click_on_button(mouse_pos):
+    #             reset_game()
 
     # Dessiner le cadre
     # pygame.draw.rect(window, (0, 0, 0), (grid_x, grid_y, 10 * cell_size, 10 * cell_size), 2)
@@ -147,6 +199,10 @@ while running:
 
         elif event.type == pygame.MOUSEBUTTONUP:
             mouse_pos = pygame.mouse.get_pos()
+
+            if click_on_button(mouse_pos):
+                reset_game()
+
             cell_x = (mouse_pos[0] - grid_x) // cell_size
             cell_y = (mouse_pos[1] - grid_y) // cell_size
             print(f"Mouse up at {cell_x}, {cell_y}")
@@ -171,25 +227,31 @@ while running:
                     selected_symbol2 = None
                     selected_pos2 = None
 
-
                     # Vérifier les alignements après le mouvement
-                    to_delete = check_alignments(grid)
-                    if to_delete:  # Si la liste n'est pas vide
-                        print(f"Alignments found: {to_delete}")
-                        score += len(to_delete) // 4  # Augmenter le score pour chaque alignement trouvé
+                    alignments = check_alignments(grid)
+                    if alignments:  # Si la liste n'est pas vide
+                        print(f"Alignments found: {alignments}")
+                        # score += len(alignments) // 4  # Augmenter le score pour chaque alignement trouvé
 
                         # Mettre en surbrillance les symboles à supprimer
-                        for pos in to_delete:
-                            pygame.draw.rect(window, (255, 255, 255), (positions[pos[0]][pos[1]][0], positions[pos[0]][pos[1]][1], cell_size, cell_size), 3)
+                        for pos in alignments:
+                            if len(pos) == 2:
+                                i, j = pos
+                                pygame.draw.rect(window, (255, 255, 255), (positions[i][j][0], positions[i][j][1], cell_size, cell_size), 3)
+
                         pygame.display.flip()  # Mettre à jour l'affichage pour montrer la surbrillance
                         pygame.time.wait(500)  # Attendre 500 millisecondes (0.5 seconde)
 
                         # Supprimer les symboles à supprimer de la grille
-                        for pos in to_delete:
-                            grid[pos[0]][pos[1]] = None
+                        for pos in alignments:
+                            if len(pos) == 2:
+                                i, j = pos
+                                grid[i][j] = None
+                        # Vider la liste alignments
+                        alignments = None, None
+                        draw_grid()
+                        pygame.display.flip()  # Mettre à jour l'affichage pour montrer la surbrillance
 
-                        # Vider la liste to_delete
-                        to_delete.clear()
 
 # Quitter Pygame une fois la boucle terminée
 pygame.quit()

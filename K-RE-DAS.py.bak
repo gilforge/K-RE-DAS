@@ -43,6 +43,22 @@ symbols = {
     "trefle": pygame.image.load('img/trefle.png')
 }
 
+# Charger l'image de sprites
+explosion = pygame.image.load('img/sprites-explosion.png')
+
+frame_width = 107
+frame_height = 110
+
+# Découper l'image de sprites en frames individuelles
+frames_sprites = []
+for i in range(6):
+    for j in range(8):
+        frame = explosion.subsurface(pygame.Rect(j * frame_width, i * frame_height, frame_width, frame_height))
+        frames_sprites.append(frame)
+
+animations = []
+
+
 # Définir les coordonnées de la grille et du cadre
 grid_x = 50
 grid_y = 75
