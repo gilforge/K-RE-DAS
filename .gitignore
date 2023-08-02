@@ -41,6 +41,8 @@ Thumbs.db
 .psd
 .ai
 
-# bakcup files #
+# backup files #
 ######################
 .bak
+./.vscode
+./sources
