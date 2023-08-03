@@ -61,7 +61,6 @@ def check_alignments(grid):
             # Vérifier l'alignement horizontal
             if j <= 6:
                 for k in range(1, 7):
-                    # if j+k >= 10 or grid[i][j] is None or (j+k < 10 and grid[i][j] != grid[i][j+k]):
                     if j+k >= 10 or grid[i][j] is None or grid[i][j] != grid[i][j+k]:
                         break
                     if k >= 3:
@@ -72,8 +71,7 @@ def check_alignments(grid):
             # Vérifier l'alignement vertical
             if i <= 6:
                 for k in range(1, 7):
-                    # if j+k >= 10 or grid[i][j] is None or (j+k < 10 and grid[i][j] != grid[i][j+k]):
-                    if j+k >= 10 or grid[i][j] is None or grid[i][j] != grid[i+k][j]:
+                    if i+k >= 10 or grid[i][j] is None or grid[i][j] != grid[i+k][j]:
                         break
                     if k >= 3:
                         for l in range(4):
@@ -89,7 +87,9 @@ def draw_grid():
             symbol = grid[i][j]
             if symbol is not None:
                 pos = positions[i][j]
-                window.blit(symbols[symbol], pos)
+                symbol_size = symbols[symbol].get_size()  # Obtenez la taille du symbole
+                centered_pos = (pos[0] + cell_size // 2 - symbol_size[0] // 2, pos[1] + cell_size // 2 - symbol_size[1] // 2)
+                window.blit(symbols[symbol], centered_pos)
                 if (i, j) == selected_pos1:  # If this is the selected symbol
                     pygame.draw.rect(window, (0, 0, 0), (grid_x + cell_x * cell_size, grid_y + cell_y * cell_size, cell_size, cell_size), 2)
 
@@ -159,16 +159,6 @@ while running:
     window.blit(textScore, (window_size[0] - textScore.get_width() - margin, margin // 2 - textScore.get_height() // 2 ))
 
     draw_button()
-    # for event in pygame.event.get():
-    #     if event.type == pygame.QUIT:
-    #         running = False
-    #     elif event.type == pygame.MOUSEBUTTONUP:
-    #         mouse_pos = pygame.mouse.get_pos()
-    #         if click_on_button(mouse_pos):
-    #             reset_game()
-
-    # Dessiner le cadre
-    # pygame.draw.rect(window, (0, 0, 0), (grid_x, grid_y, 10 * cell_size, 10 * cell_size), 2)
 
     to_delete = []
 
@@ -178,7 +168,9 @@ while running:
             symbol = grid[i][j]
             if symbol is not None:
                 pos = positions[i][j]
-                window.blit(symbols[symbol], pos)
+                symbol_size = symbols[symbol].get_size()  # Obtenez la taille du symbole
+                centered_pos = (pos[0] + cell_size // 2 - symbol_size[0] // 2, pos[1] + cell_size // 2 - symbol_size[1] // 2)
+                window.blit(symbols[symbol], centered_pos)
                 if (i, j) == selected_pos1:  # If this is the selected symbol
                     pygame.draw.rect(window, (0, 0, 0), (grid_x + cell_x * cell_size, grid_y + cell_y * cell_size, cell_size, cell_size), 2)
 
@@ -249,6 +241,7 @@ while running:
                                 grid[i][j] = None
                         # Vider la liste alignments
                         alignments = None, None
+
                         draw_grid()
                         pygame.display.flip()  # Mettre à jour l'affichage pour montrer la surbrillance
 
