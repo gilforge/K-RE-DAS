@@ -199,7 +199,8 @@ while running:
             cell_y = (mouse_pos[1] - grid_y) // cell_size
             print(f"Mouse up at {cell_x}, {cell_y}")
 
-            if 0 <= cell_x < 10 and 0 <= cell_y < 10:  # Check if the click is within the grid
+            if 0 <= cell_x < 10 and 0 <= cell_y < 10 and grid[cell_y][cell_x] is not None:
+            # if 0 <= cell_x < 10 and 0 <= cell_y < 10:  # Check if the click is within the grid
                 if selected_symbol1 is None:  # If no symbol is selected yet
                     selected_symbol1 = grid[cell_y][cell_x]
                     selected_pos1 = (cell_x, cell_y)
