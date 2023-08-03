@@ -52,6 +52,27 @@ for i in range(10):
         row.append((grid_x + j * cell_size, grid_y + i * cell_size))
     positions.append(row)
 
+#########
+# SCORE #
+#########
+
+# Lecture ou création du fichier de score
+def get_high_score():
+    try:
+        with open('high_score.txt', 'r') as f:
+            return int(f.read())
+    except FileNotFoundError:
+        return 0
+
+# Sauvegarde du score
+def save_high_score(high_score):
+    with open('high_score.txt', 'w') as f:
+        f.write(str(high_score))
+
+# Charger la variable score avec celui contenu dans le fichier
+high_score = get_high_score()
+
+
 # Fonction qui vérifie l'alignement de 4 symboles
 def check_alignments(grid):
     to_delete = []
@@ -97,7 +118,11 @@ def draw_grid():
                 if (i, j) in to_delete:
                     pygame.draw.rect(window, (255, 255, 255), (pos[0], pos[1], cell_size, cell_size), 3)
 
-# Dessiner le bouton
+###########
+# BOUTONS #
+###########
+
+# Dessiner le bouton Nouveau
 width_new = 200
 height_new = 40
 posX_new = 50
@@ -105,17 +130,44 @@ posY_new = 590
 posX_text_new = posX_new + 10
 posY_text_new = posY_new + 5
 
-def draw_button():
+# Dessiner le bouton Quitter
+width_quit = 200
+height_quit = 40
+posX_quit = 350
+posY_quit = 590
+posX_text_quit = posX_quit + 10
+posY_text_quit = posY_quit + 5
+
+def draw_button_new():
     pygame.draw.rect(window, color_White, (posX_new, posY_new, width_new, height_new),1)
     font_new = pygame.font.Font("font/JetBrainsMono-Bold.ttf", 20)
     text_new = font_new.render("Nouveau", True, color_White) 
     window.blit(text_new, (posX_text_new, posY_text_new)) 
 
-# Détecter le clic sur le bouton
-def click_on_button(mouse_pos):
+def draw_button_quit():
+    pygame.draw.rect(window, color_White, (posX_quit, posY_quit, width_quit, height_quit),1)
+    font_quit = pygame.font.Font("font/JetBrainsMono-Bold.ttf", 20)
+    text_quit = font_quit.render("Quitter", True, color_White) 
+    window.blit(text_quit, (posX_text_quit, posY_text_quit)) 
+
+# Détecter le clic sur le bouton Nouveau
+def click_on_button_new(mouse_pos):
     if posX_new < mouse_pos[0] < (posX_new + width_new) and posY_new < mouse_pos[1] < (posY_new + height_new): 
         return True
     return False
+
+# Détecter le clic sur le bouton Nouveau
+def click_on_button_quit(mouse_pos):
+    if posX_quit < mouse_pos[0] < (posX_quit + width_quit) and posY_quit < mouse_pos[1] < (posY_quit + height_quit): 
+        return True
+    return False
+
+# Ecrire le high_score
+def update_high_score(score, high_score):
+    if score > high_score:
+        high_score = score
+        save_high_score(high_score)
+    return high_score
 
 # Réinitialiser le jeu
 def reset_game():
@@ -145,20 +197,26 @@ while running:
 
     # Dessiner le titre
     fontTitle = pygame.font.Font("font/JetBrainsMono-ExtraBold.ttf", 36)
-    textTitle = fontTitle.render(game_title, True, (200, 200, 200))
+    textTitle = fontTitle.render(game_title, True, color_White)
     window.blit(textTitle, (margin, margin // 2 - textTitle.get_height() // 2))
 
     # Dessiner le nom de l'auteur
     fontAuthor = pygame.font.Font("font/JetBrainsMono-Light.ttf", 12)
-    textAuthor = fontAuthor.render(game_author, True, (200, 200, 200))
+    textAuthor = fontAuthor.render(game_author, True, color_White)
     window.blit(textAuthor, (margin, margin // 2 + textTitle.get_height() - 30))  # -30 pour le rapprocher du titre
+
+    # Dessiner le score le plus élevé
+    fontHighScore = pygame.font.Font("font/JetBrainsMono-Bold.ttf", 24)
+    textHighScore = fontHighScore.render(f"High score: {high_score:04}", True, color_White)
+    window.blit(textHighScore, (315, 10))
 
     # Dessiner le score
     fontScore = pygame.font.Font("font/JetBrainsMono-Bold.ttf", 24)
-    textScore = fontScore.render(str(score), True, (200, 200, 200))
-    window.blit(textScore, (window_size[0] - textScore.get_width() - margin, margin // 2 - textScore.get_height() // 2 ))
+    textScore = fontScore.render(f"{score:04}", True, color_White)
+    window.blit(textScore, (480, 40))
 
-    draw_button()
+    draw_button_new()
+    draw_button_quit()
 
     to_delete = []
 
@@ -178,9 +236,6 @@ while running:
                     if (i, j) in to_delete:
                         pygame.draw.rect(window, (255, 255, 255), (pos[0], pos[1], cell_size, cell_size), 3)
 
-    # Dessiner le contour
-    # pygame.draw.rect(window, (250, 250, 250), (grid_x, grid_y, 10 * cell_size, 10 * cell_size), 2)
-
     # Mettre à jour l'affichage
     pygame.display.flip()
 
@@ -192,8 +247,13 @@ while running:
         elif event.type == pygame.MOUSEBUTTONUP:
             mouse_pos = pygame.mouse.get_pos()
 
-            if click_on_button(mouse_pos):
+            if click_on_button_new(mouse_pos):
+                high_score = update_high_score(score, high_score)
                 reset_game()
+
+            if click_on_button_quit(mouse_pos):
+                high_score = update_high_score(score, high_score)
+                running = False
 
             cell_x = (mouse_pos[0] - grid_x) // cell_size
             cell_y = (mouse_pos[1] - grid_y) // cell_size
@@ -230,7 +290,7 @@ while running:
                         for pos in alignments:
                             if len(pos) == 2:
                                 i, j = pos
-                                pygame.draw.rect(window, (255, 255, 255), (positions[i][j][0], positions[i][j][1], cell_size, cell_size), 3)
+                                pygame.draw.rect(window, color_White, (positions[i][j][0], positions[i][j][1], cell_size, cell_size), 1)
 
                         pygame.display.flip()  # Mettre à jour l'affichage pour montrer la surbrillance
                         pygame.time.wait(500)  # Attendre 500 millisecondes (0.5 seconde)
@@ -246,6 +306,7 @@ while running:
                         draw_grid()
                         pygame.display.flip()  # Mettre à jour l'affichage pour montrer la surbrillance
 
+high_score = update_high_score(score, high_score)
 
 # Quitter Pygame une fois la boucle terminée
 pygame.quit()
