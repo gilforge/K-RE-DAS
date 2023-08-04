@@ -12,4 +12,8 @@
 - Le score compte 4 points pour un alignements de 4 AS. 5 AS alignés comptent pour 2 groupe de 4, donc 8 points.
 
 ## Capture du jeu actuel
-![alt tag](https://github.com/gilforge/K-RE-DAS/blob/master/img/K-RE-DAS.png)
+![Capture du jeu v1.0](https://github.com/gilforge/K-RE-DAS/blob/master/img/K-RE-DAS.png)
+
+## Pour jouer (temporaire)
+Il vous faut installer python et pygame ou vous rendre sur Itch.io
+![>> K-RE-DAS sur Itch.io <<](https://studiocurieux.itch.io/k-re-das)
