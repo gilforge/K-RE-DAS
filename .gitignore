@@ -6,6 +6,9 @@
 *.exe
 *.o
 *.so
+*.spec
+/build
+/dist
 
 # Packages #
 ############
@@ -38,11 +41,11 @@ Thumbs.db
 
 # sources files #
 ######################
-.psd
-.ai
+*.psd
+*.ai
 
 # backup files #
 ######################
-.bak
+*.bak
 /.vscode
 /sources

@@ -73,7 +73,10 @@ def save_high_score(high_score):
 high_score = get_high_score()
 
 
-# Fonction qui vérifie l'alignement de 4 symboles
+###############
+# ALIGNEMENTS #
+###############
+
 def check_alignments(grid):
     to_delete = []
     global score
@@ -81,24 +84,23 @@ def check_alignments(grid):
         for j in range(10):
             # Vérifier l'alignement horizontal
             if j <= 6:
-                for k in range(1, 7):
-                    if j+k >= 10 or grid[i][j] is None or grid[i][j] != grid[i][j+k]:
-                        break
-                    if k >= 3:
-                        for l in range(4):
-                            to_delete.append((i, j + l))
-                            print(f"Boucle 1 > i = {i} | j = {j} | k = {k} | HORZ")
-                        score += k
+                k = 0
+                while j+k+1 < 10 and grid[i][j] is not None and grid[i][j] == grid[i][j+k+1]:
+                    k += 1
+                if k >= 3:
+                    for l in range(k+1):
+                        to_delete.append((i, j + l))
+                    score += 4  # Ajouter 4 points pour chaque alignement
             # Vérifier l'alignement vertical
             if i <= 6:
-                for k in range(1, 7):
-                    if i+k >= 10 or grid[i][j] is None or grid[i][j] != grid[i+k][j]:
-                        break
-                    if k >= 3:
-                        for l in range(4):
-                            to_delete.append((i + l, j))
-                            print(f"Boucle 2 > i = {i} | j = {j} | k = {k} | VERT")
-                        score += k
+                k = 0
+                while i+k+1 < 10 and grid[i][j] is not None and grid[i][j] == grid[i+k+1][j]:
+                    k += 1
+                if k >= 3:
+                    for l in range(k+1):
+                        to_delete.append((i + l, j))
+                    score += 4  # Ajouter 4 points pour chaque alignement
+    # print(f"Nombre d'alignements trouvés : {len(alignments)}")
     return to_delete
 
 # Fonction qui dessine la grille
@@ -150,6 +152,12 @@ def draw_button_quit():
     text_quit = font_quit.render("Quitter", True, color_White) 
     window.blit(text_quit, (posX_text_quit, posY_text_quit)) 
 
+# Détecter le clic sur le high score
+def click_on_button_HS(mouse_pos):
+    if textHighScore_X - 10 < mouse_pos[0] < (textHighScore_X - 10 + 100) and textHighScore_Y < mouse_pos[1] < (textHighScore_Y + 40): 
+        return True
+    return False
+
 # Détecter le clic sur le bouton Nouveau
 def click_on_button_new(mouse_pos):
     if posX_new < mouse_pos[0] < (posX_new + width_new) and posY_new < mouse_pos[1] < (posY_new + height_new): 
@@ -161,6 +169,10 @@ def click_on_button_quit(mouse_pos):
     if posX_quit < mouse_pos[0] < (posX_quit + width_quit) and posY_quit < mouse_pos[1] < (posY_quit + height_quit): 
         return True
     return False
+
+#########
+# SCORE #
+#########
 
 # Ecrire le high_score
 def update_high_score(score, high_score):
@@ -186,34 +198,41 @@ selected_pos1 = None
 selected_symbol2 = None
 selected_pos2 = None
 
-# Boucle principale du jeu
+
+#####################
+# BOUCLE PRINCIPALE #
+#####################
+
 running = True
 while running:
+
     # Remplir l'écran avec la couleur de fond
     image_fond = pygame.image.load("img/tapis.jpg")
     fond = pygame.transform.scale(image_fond, window_size)
-    # fond = image_fond.convert()
     window.blit(fond,(0,0))
 
-    # Dessiner le titre
+    # Titre
     fontTitle = pygame.font.Font("font/JetBrainsMono-ExtraBold.ttf", 36)
     textTitle = fontTitle.render(game_title, True, color_White)
-    window.blit(textTitle, (margin, margin // 2 - textTitle.get_height() // 2))
+    window.blit(textTitle, (70,10))
 
-    # Dessiner le nom de l'auteur
+    # Nom de l'auteur
     fontAuthor = pygame.font.Font("font/JetBrainsMono-Light.ttf", 12)
     textAuthor = fontAuthor.render(game_author, True, color_White)
-    window.blit(textAuthor, (margin, margin // 2 + textTitle.get_height() - 30))  # -30 pour le rapprocher du titre
+    window.blit(textAuthor, (70,50))  # -30 pour le rapprocher du titre
 
-    # Dessiner le score le plus élevé
-    fontHighScore = pygame.font.Font("font/JetBrainsMono-Bold.ttf", 24)
-    textHighScore = fontHighScore.render(f"High score: {high_score:04}", True, color_White)
-    window.blit(textHighScore, (315, 10))
+    # Score le plus élevé
+    textHighScore_X = 300
+    textHighScore_Y = 15
+    fontHighScore = pygame.font.Font("font/JetBrainsMono-Bold.ttf", 32)
+    textHighScore = fontHighScore.render(f"{high_score:04}", True, color_White)
+    window.blit(textHighScore, (textHighScore_X,textHighScore_Y))
+    pygame.draw.rect(window, color_White, (textHighScore_X - 10,textHighScore_Y,100,40), 2)
 
-    # Dessiner le score
-    fontScore = pygame.font.Font("font/JetBrainsMono-Bold.ttf", 24)
+    # Score
+    fontScore = pygame.font.Font("font/JetBrainsMono-Bold.ttf", 32)
     textScore = fontScore.render(f"{score:04}", True, color_White)
-    window.blit(textScore, (480, 40))
+    window.blit(textScore, (450,15))
 
     draw_button_new()
     draw_button_quit()
@@ -250,17 +269,21 @@ while running:
             if click_on_button_new(mouse_pos):
                 high_score = update_high_score(score, high_score)
                 reset_game()
+                print(f"NOUVEAU")
 
             if click_on_button_quit(mouse_pos):
                 high_score = update_high_score(score, high_score)
                 running = False
 
+            if click_on_button_HS(mouse_pos):
+                high_score = 0
+                save_high_score(high_score)
+                print(f"RESET HS")
+
             cell_x = (mouse_pos[0] - grid_x) // cell_size
             cell_y = (mouse_pos[1] - grid_y) // cell_size
-            print(f"Mouse up at {cell_x}, {cell_y}")
 
             if 0 <= cell_x < 10 and 0 <= cell_y < 10 and grid[cell_y][cell_x] is not None:
-            # if 0 <= cell_x < 10 and 0 <= cell_y < 10:  # Check if the click is within the grid
                 if selected_symbol1 is None:  # If no symbol is selected yet
                     selected_symbol1 = grid[cell_y][cell_x]
                     selected_pos1 = (cell_x, cell_y)
@@ -283,7 +306,7 @@ while running:
                     # Vérifier les alignements après le mouvement
                     alignments = check_alignments(grid)
                     if alignments:  # Si la liste n'est pas vide
-                        print(f"Alignments found: {alignments}")
+                        print(f"Alignments found: {alignments},\n {score}")
                         # score += len(alignments) // 4  # Augmenter le score pour chaque alignement trouvé
 
                         # Mettre en surbrillance les symboles à supprimer
