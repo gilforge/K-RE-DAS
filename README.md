@@ -15,4 +15,4 @@
 ![Capture du jeu v1.0](https://github.com/gilforge/K-RE-DAS/blob/master/img/K-RE-DAS.png)
 
 ## Pour jouer (temporaire)
-Il vous faut installer python et pygame ou vous rendre sur Itch.io [>> K-RE-DAS sur Itch.io <<](https://studiocurieux.itch.io/k-re-das) !
+Pour jouer, il faut vous rendre sur Itch.io [>> K-RE-DAS sur Itch.io <<](https://studiocurieux.itch.io/k-re-das) !
