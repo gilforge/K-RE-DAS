@@ -1,3 +1,10 @@
+############
+# K-RE-DAS #
+############
+# Author = Gilles Aubin
+# Website = gilles-aubin.net
+# Version = 1.1.0
+
 import pygame
 import random
 
