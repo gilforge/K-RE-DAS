@@ -7,14 +7,17 @@
 
 import pygame
 import random
-
-splash_image = pygame.image.load('img/splash_windows.png')  # Assurez-vous que l'image est dans le bon répertoire
+import json
 
 # Initialiser Pygame
 pygame.init()
 
+
+#############
+# VARIABLES #
+#############
+
 # Définir les variables du jeu
-# set the pygame window name
 pygame.display.set_caption('K-RE-DAS')
 game_title = "K-RE-DAS"
 game_author = "by Gilles Aubin"
@@ -31,26 +34,55 @@ color_White = (204, 204, 204)
 window = pygame.display.set_mode(window_size) # fenêtré
 # window = pygame.display.set_mode(window_size, pygame.SCALED|pygame.FULLSCREEN) # plein écran
 
-# Charger les images
+# Définir les coordonnées de la grille et du cadre
+grid_x = 50
+grid_y = 75
+cell_x, cell_y = 40, 40
+
+
+##########
+# IMAGES #
+##########
+ 
+splash_image = pygame.image.load('img/splash_windows.png')  # Assurez-vous que l'image est dans le bon répertoire
+game_image = pygame.image.load('img/tapis.jpg')
 symbols = {
     "pique": pygame.image.load('img/pique.png'),
     "carreau": pygame.image.load('img/carreau.png'),
     "coeur": pygame.image.load('img/coeur.png'),
     "trefle": pygame.image.load('img/trefle.png')
 }
+help_image = pygame.image.load('img/aide.jpg')
+obstacle_image = pygame.image.load('img/obstacle.png')
+# obstacle_image = pygame.transform.scale(obstacle_image, (cell_size, cell_size))
 
-# Définir les coordonnées de la grille et du cadre
-grid_x = 50
-grid_y = 75
 
-# Créer une grille de 10x10 et la remplir de symboles aléatoires
-grid = []
-for i in range(10):
-    row = []
-    for j in range(10):
-        # Remplir la grille avec des symboles aléatoires
-         row.append(random.choice(list(symbols.keys())))
-    grid.append(row)
+###########
+# NIVEAUX #
+###########
+
+with open('config/levels.json', 'r') as file:
+    levels_data = json.load(file)
+
+current_level = levels_data['levels'][0]  # Charger le premier niveau
+levelToPlay = current_level['level']
+
+print(f"Niveau : {levelToPlay} | obstacles : {current_level}")
+
+def initialize_grid(level_data):
+    grid = []
+    for i in range(10):
+        row = []
+        for j in range(10):
+            if any(obstacle['row'] == i and obstacle['col'] == j for obstacle in level_data['obstacles']):
+                row.append('obstacle')  # Ajouter un obstacle
+            else:
+                row.append(random.choice(list(symbols.keys())))  # Ajouter un symbole aléatoire
+        grid.append(row)
+    return grid
+
+grid = initialize_grid(current_level)
+print(f"Grille : {grid}")
 
 # Créer une grille vide pour les positions des symboles
 positions = []
@@ -68,18 +100,31 @@ for i in range(10):
 # Lecture ou création du fichier de score
 def get_high_score():
     try:
-        with open('high_score.txt', 'r') as f:
+        with open('config/high_score.txt', 'r') as f:
             return int(f.read())
     except FileNotFoundError:
         return 0
 
 # Sauvegarde du score
 def save_high_score(high_score):
-    with open('high_score.txt', 'w') as f:
+    with open('config/high_score.txt', 'w') as f:
         f.write(str(high_score))
 
 # Charger la variable score avec celui contenu dans le fichier
 high_score = get_high_score()
+
+# Ecrire le high_score
+def update_high_score(score, high_score):
+    if score > high_score:
+        high_score = score
+        save_high_score(high_score)
+    return high_score
+
+# Réinitialiser le jeu
+def reset_game(level_data):
+    global grid, score
+    grid = initialize_grid(level_data)
+    score = 0
 
 
 ###############
@@ -112,13 +157,23 @@ def check_alignments(grid):
     # print(f"Nombre d'alignements trouvés : {len(alignments)}")
     return to_delete
 
-# Fonction qui dessine la grille
-def draw_grid():
+
+######################
+# DESSINER LA GRILLE #
+######################
+
+# Fonction qui dessine la grille et place les obstacles en fonction du niveau
+def draw_grid(grid, positions, symbols, cell_size, window, selected_pos1=None, to_delete=None):
     for i in range(10):
         for j in range(10):
             symbol = grid[i][j]
+            pos = positions[i][j]
+            print(f"Symbole : {symbol} : {pos}")
+            if symbol == 'obstacle':
+                window.blit(obstacle_image, (pos[0], pos[1]))
+                # pygame.draw.rect(window, (0, 255, 0), (pos[0], pos[1], cell_size, cell_size))
+                continue  # Passer à l'itération suivante si c'est un obstacle
             if symbol is not None:
-                pos = positions[i][j]
                 symbol_size = symbols[symbol].get_size()  # Obtenez la taille du symbole
                 centered_pos = (pos[0] + cell_size // 2 - symbol_size[0] // 2, pos[1] + cell_size // 2 - symbol_size[1] // 2)
                 window.blit(symbols[symbol], centered_pos)
@@ -127,36 +182,12 @@ def draw_grid():
 
                 # Si le symbole est à supprimer, dessinez une surbrillance
                 if (i, j) in to_delete:
-                    pygame.draw.rect(window, (255, 255, 255), (pos[0], pos[1], cell_size, cell_size), 3)
-
-
-#########
-# SCORE #
-#########
-
-# Ecrire le high_score
-def update_high_score(score, high_score):
-    if score > high_score:
-        high_score = score
-        save_high_score(high_score)
-    return high_score
-
-# Réinitialiser le jeu
-def reset_game():
-    global grid, score
-    grid = []
-    for i in range(10):
-        row = []
-        for j in range(10):
-            row.append(random.choice(list(symbols.keys())))
-        grid.append(row)
-    score = 0
+                    pygame.draw.rect(window, (255, 0, 0), (pos[0], pos[1], cell_size, cell_size), 3)
 
 
 ###########
 # BOUTONS #
 ###########
-
 
 # >>>>>> BOUTON RESET HIGH SCORE
 
@@ -267,7 +298,6 @@ def click_on_button_close(mouse_pos):
 
 # Afficher l'écran d'aide
 def show_help_screen():
-    help_image = pygame.image.load('img/aide.jpg')
     window.blit(help_image, (0, 0))
     draw_button_close()
     pygame.display.flip()
@@ -297,23 +327,21 @@ def fade_between_images(image1, image2):
         pygame.display.flip()
 
         # Attendez un peu pour voir l'effet de fondu
-        pygame.time.wait(10)  # Attendre 10 millisecondes
+        pygame.time.wait(3)  # Attendre 10 millisecondes
 
-# Utilisation de la fonction
-splash_image = pygame.image.load('img/splash_windows.png')
-game_image = pygame.image.load('img/tapis.jpg')
+# Transition du splashscreen
 fade_between_images(splash_image, game_image)
+
+
+#####################
+# BOUCLE PRINCIPALE #
+#####################
 
 # Variable pour suivre le symbole actuellement sélectionné et sa position
 selected_symbol1 = None
 selected_pos1 = None
 selected_symbol2 = None
 selected_pos2 = None
-
-
-#####################
-# BOUCLE PRINCIPALE #
-#####################
 
 running = True
 showing_help = False
@@ -364,27 +392,18 @@ while running:
     textScore = fontScore.render(f"{score:04}", True, color_White)
     window.blit(textScore, (450,15))
 
+    # Niveau
+    fontLevel = pygame.font.Font("font/JetBrainsMono-Bold.ttf", 12)
+    textLevel = fontLevel.render(f"Level: {levelToPlay}", True, color_White)
+    window.blit(textLevel, (450, 5))  # Vous pouvez ajuster la position selon vos besoins
+
     draw_button_new()
     draw_button_help()
     draw_button_quit()
 
     to_delete = []
 
-    # Dessiner la grille pour qu'elle soit belle
-    for i in range(10):
-        for j in range(10):
-            symbol = grid[i][j]
-            if symbol is not None:
-                pos = positions[i][j]
-                symbol_size = symbols[symbol].get_size()  # Obtenez la taille du symbole
-                centered_pos = (pos[0] + cell_size // 2 - symbol_size[0] // 2, pos[1] + cell_size // 2 - symbol_size[1] // 2)
-                window.blit(symbols[symbol], centered_pos)
-                if (i, j) == selected_pos1:  # If this is the selected symbol
-                    pygame.draw.rect(window, (0, 0, 0), (grid_x + cell_x * cell_size, grid_y + cell_y * cell_size, cell_size, cell_size), 2)
-
-                    # Si le symbole est à supprimer, dessinez une surbrillance
-                    if (i, j) in to_delete:
-                        pygame.draw.rect(window, (255, 255, 255), (pos[0], pos[1], cell_size, cell_size), 3)
+    draw_grid(grid, positions, symbols, cell_size, window, selected_pos1, to_delete)
 
     # Mettre à jour l'affichage
     pygame.display.flip()
@@ -406,7 +425,7 @@ while running:
             # Gestion des clics sur l'écran de jeu principal
             if click_on_button_new(mouse_pos):
                 high_score = update_high_score(score, high_score)
-                reset_game()
+                reset_game(current_level)
 
             elif click_on_button_quit(mouse_pos):
                 high_score = update_high_score(score, high_score)
@@ -425,6 +444,8 @@ while running:
             cell_y = (mouse_pos[1] - grid_y) // cell_size
 
             if 0 <= cell_x < 10 and 0 <= cell_y < 10 and grid[cell_y][cell_x] is not None:
+                if grid[cell_y][cell_x] == 'obstacle':  # Si c'est un obstacle, ignorez la sélection
+                        continue
                 if selected_symbol1 is None:  # If no symbol is selected yet
                     selected_symbol1 = grid[cell_y][cell_x]
                     selected_pos1 = (cell_x, cell_y)
@@ -435,7 +456,7 @@ while running:
                     grid[selected_pos1[1]][selected_pos1[0]] = selected_symbol2
                     grid[selected_pos2[1]][selected_pos2[0]] = selected_symbol1
 
-                    draw_grid()  # Redraw the grid after swapping the symbols
+                    draw_grid(grid, positions, symbols, cell_size, window, selected_pos1, to_delete)  # Redraw the grid after swapping the symbols
                     pygame.display.flip()  # Update the display to show the swapped symbols
 
                     # Reset the selected symbols and positions
@@ -467,7 +488,7 @@ while running:
                         # Vider la liste alignments
                         alignments = None, None
 
-                        draw_grid()
+                        draw_grid(grid, positions, symbols, cell_size, window, selected_pos1, to_delete)
                         pygame.display.flip()  # Mettre à jour l'affichage pour montrer la surbrillance
 
 high_score = update_high_score(score, high_score)

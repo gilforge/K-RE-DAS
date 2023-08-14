@@ -1,0 +1,15 @@
+{
+  "levels": [
+    {
+      "level": 1,
+      "obstacles": []
+    },
+    {
+      "level": 2,
+      "obstacles": [
+        {"row": 4, "col": 4},
+        {"row": 5, "col": 5}
+      ]
+    }
+  ]
+}
