@@ -18,8 +18,14 @@
 Pour jouer, il faut vous rendre sur Itch.io [>> K-RE-DAS sur Itch.io <<](https://studiocurieux.itch.io/k-re-das) !
 
 ## Version
+- 16/08/2023 : 1.3.1
+    Ajout d'ambiance sonore
+    Ajout de FX audios
+    Fix bug "pas de progression"
+    Fix bug "Fin de jeu"
+
 - 15/08/2023 : 1.2.0
-    Mise en place de 7 niveaux
+    Mise en place de 3 niveaux
     Sauvegarde de la progression
     Mise en place des obstacles
 

@@ -76,7 +76,10 @@ pygame.mixer.music.set_volume(volume_ambiance)
 def load_config_data() :
     try :
         with open('config/config.json', 'r') as file:
-            return json.load(file)
+            data = json.load(file)
+            if 'progression' not in data:
+                data['progression'] = 1
+            return data
     except FileNotFoundError :
         return None
 
@@ -84,9 +87,19 @@ config_data = load_config_data()
 
 # Trouver le niveau avec une progression de 1
 def load_progress(config_data):
-    if config_data :
-        current_level = next(level for level in config_data['config'] if level['progression'] == 1)
-    return current_level
+    if config_data:
+        # Vérifiez si la clé "config" existe et contient des niveaux avec une progression égale à 1
+        levels_with_progression = [level for level in config_data.get('config', []) if level.get('progression') == 1]
+        
+        # Si nous trouvons des niveaux avec une progression égale à 1, retournez le premier
+        if levels_with_progression:
+            return levels_with_progression[0]
+        
+        # Sinon, retournez le premier niveau par défaut
+        return config_data.get('config', [{}])[0]
+    
+    # Si config_data est None ou vide, retournez un dictionnaire vide
+    return {}
 
 # Chargement des données de progression
 current_level = load_progress(config_data)
@@ -100,7 +113,7 @@ current_obstacles = current_level['obstacles']
 
 
 def save_config_data(config_data):
-    print(f"SAVE CONGIGDATA\n>>> config : {config_data}")
+    print(f"SAVECONFIGDATA\n>>> config : {config_data}")
     with open('config/config.json', 'w') as file:
         json.dump(config_data, file, indent=4)
 
@@ -110,14 +123,21 @@ def load_next_level():
     print("LOADNEXTLEVEL")
 
     if levelToPlay < len(config_data['config']):  # Vérifier si ce n'est pas le dernier niveau
-
         levelToPlay += 1
-        current_level = config_data['config'][levelToPlay-1]
-        current_objectif = current_level['objectif']
-        current_meilleurScore = current_level['meilleurScore']
-        high_score = current_meilleurScore
-        reset_game()
     else:
+        save_progress(config_data)
+        # Si c'est le dernier niveau, réinitialisez levelToPlay à 1 pour ramener le joueur au premier niveau
+        levelToPlay = 1
+
+    current_level = config_data['config'][levelToPlay-1]
+    current_objectif = current_level['objectif']
+    current_meilleurScore = current_level['meilleurScore']
+    high_score = current_meilleurScore
+    reset_game()
+
+    # Si le joueur est revenu au premier niveau après avoir terminé tous les niveaux, affichez l'écran de fin de jeu
+    if levelToPlay == 1:
+        save_progress(config_data)
         show_endgame_screen()
         showing_endgame = True
         # Ajouter une boucle pour maintenir l'écran de fin de jeu à l'affichage
@@ -171,13 +191,18 @@ def reset_game():
     print(f"RESSET GAME\n>>> {score}")
     return grid, score
 
-# SAUVEGARDE PROGRESSION > OK
+# SAUVEGARDE PROGRESSION
 def save_progress(config_data):
+    # Réinitialiser la progression pour tous les niveaux
     for level in config_data['config']:
-        if level['level'] == current_level['level']:
-            level['progression'] = 0
-        elif level['level'] == current_level['level'] + 1:
-            level['progression'] = 1
+        level['progression'] = 0
+
+    # Si le joueur a terminé tous les niveaux, définissez la progression du premier niveau sur 1
+    if levelToPlay == 1:
+        config_data['config'][0]['progression'] = 1
+    else:
+        config_data['config'][levelToPlay-1]['progression'] = 1
+
     save_config_data(config_data)
     print(f"SAVE PROGRESS\n>>> progression : {current_progress}")
 
