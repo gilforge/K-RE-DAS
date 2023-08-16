@@ -84,21 +84,21 @@ current_obstacles = current_level['obstacles']
 
 
 def save_config_data(config_data):
+    print(f"SAVE CONGIGDATA\n>>> config : {config_data}")
     with open('config/config.json', 'w') as file:
         json.dump(config_data, file, indent=4)
 
 def load_next_level():
-    global levelToPlay, current_level, current_objectif
+    global levelToPlay, current_level, current_objectif, current_meilleurScore
 
-    if levelToPlay < len(config_data['config']) - 1:  # Vérifier si ce n'est pas le dernier niveau
-        save_progress(config_data)
+    print("LOADNEXTLEVEL")
 
-        # levelToPlay += 1
-        current_level = config_data['config'][levelToPlay]
+    if levelToPlay < len(config_data['config']):  # Vérifier si ce n'est pas le dernier niveau
+
+        levelToPlay += 1
+        current_level = config_data['config'][levelToPlay-1]
         current_objectif = current_level['objectif']
-
-        print(f"LOAD NEXT LEVEL\n>>> LevelToPlay : {levelToPlay}\n>>> current_level{current_level}\n>>> current_objectif {current_objectif}")
-
+        current_meilleurScore = current_level['meilleurScore']
         reset_game()
     else:
         show_endgame_screen()
@@ -123,25 +123,34 @@ def count_remaining_symbols(grid):
 #########
 
 # Lecture du meilleur score du niveau
-def get_high_score(config_data):
+def get_high_score():
+    global config_data
     # Récupérer le meilleur score du niveau actuel
+    print(f"GET HIGHSCORE\n>>> meilleurScore : {current_meilleurScore}")
+
     return current_level['meilleurScore']
 
-# Charger la variable score avec celui contenu dans le fichier
-high_score = get_high_score(config_data)
 
-# MISE A JOUR DU HIGH_SCrORE > OK
-def update_high_score(score, config_data):
+# Charger la variable score avec celui contenu dans le fichier
+high_score = get_high_score()
+
+# MISE A JOUR DU HIGH_SCORE > OK
+def update_high_score():
+    global high_score, score, config_data
+    print(f"UPDATE HIGHSCORE\n>>> meilleurScore : {current_meilleurScore}")
     if score > current_level['meilleurScore']:
         current_level['meilleurScore'] = score
         save_config_data(config_data)
+
     return current_level['meilleurScore']
 
-# Réinitialiser le jeu
+
+# REINITIALISER > OK
 def reset_game():
     global config_data, grid, score
     grid = initialize_grid()
     score = 0
+    print(f"RESSET GAME\n>>> {score}")
     return grid, score
 
 # SAUVEGARDE PROGRESSION > OK
@@ -151,8 +160,9 @@ def save_progress(config_data):
             level['progression'] = 0
         elif level['level'] == current_level['level'] + 1:
             level['progression'] = 1
-    with open('config/config.json', 'w') as file:
-        json.dump(config_data, file, indent=4)
+    save_config_data(config_data)
+    print(f"SAVE PROGRESS\n>>> progression : {current_progress}")
+
 
 # # SAUVEGARDE MEILLEUR SCORE > OK
 # if config_data:
@@ -383,6 +393,7 @@ def click_on_button_close(mouse_pos):
 ##############
 
 def show_help_screen():
+    print("SHOW HELPSCREEN")
     window.blit(help_image, (0, 0))
     draw_button_close()
     pygame.display.flip()
@@ -393,6 +404,7 @@ def show_help_screen():
 ####################
 
 def show_endgame_screen():
+    print("SHOW ENDGAME")
     window.blit(endgame_image, (0, 0))
     draw_button_close()
     pygame.display.flip()
@@ -518,11 +530,11 @@ while running:
 
             # Gestion des clics sur l'écran de jeu principal
             if click_on_button_new(mouse_pos):
-                high_score = update_high_score(score, config_data)
+                high_score = update_high_score()
                 reset_game()
 
             elif click_on_button_quit(mouse_pos):
-                high_score = update_high_score(score, config_data)
+                high_score = update_high_score()
                 running = False
 
             elif click_on_button_help(mouse_pos):
@@ -534,7 +546,8 @@ while running:
 
             if click_on_button_HS(mouse_pos):
                 high_score = 0
-                update_high_score(high_score)
+                score = 0
+                update_high_score()
 
             cell_x = (mouse_pos[0] - grid_x) // cell_size
             cell_y = (mouse_pos[1] - grid_y) // cell_size
@@ -615,11 +628,11 @@ while running:
                         if remaining_symbols <= current_objectif:
                             # Gérer la fin de jeu ici (par exemple, passer au niveau suivant)
                             print("FIN DU NIVEAU !")
-
-                            high_score = update_high_score(score, high_score)
+                            save_progress(config_data)
+                            high_score = update_high_score()
                             load_next_level()
 
-high_score = update_high_score(score, high_score)
+high_score = update_high_score()
 
 # Quitter Pygame une fois la boucle terminée
 pygame.quit()
