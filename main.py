@@ -11,6 +11,7 @@ import json
 
 # Initialiser Pygame
 pygame.init()
+pygame.mixer.init()
 
 
 #############
@@ -52,6 +53,21 @@ endgame_image = pygame.image.load('img/findejeu.jpg')
 obstacle_image = pygame.image.load('img/obstacle.png')
 
 
+########
+# SONS #
+########
+
+volume_FX = 0.5
+volume_ambiance = 0.5
+
+ambiance_music = pygame.mixer.music.load("sons/ambiance.wav")
+swap_sound = pygame.mixer.Sound("sons/swap.ogg")
+aligner_sound = pygame.mixer.Sound("sons/aligner.ogg")
+
+pygame.mixer.music.play(-1)  # Le -1 signifie que la musique sera jouée en boucle indéfiniment
+pygame.mixer.music.set_volume(volume_ambiance)
+
+
 ###########
 # NIVEAUX #
 ###########
@@ -89,7 +105,7 @@ def save_config_data(config_data):
         json.dump(config_data, file, indent=4)
 
 def load_next_level():
-    global levelToPlay, current_level, current_objectif, current_meilleurScore, high_score
+    global levelToPlay, current_level, current_objectif, current_meilleurScore, high_score, showing_endgame
 
     print("LOADNEXTLEVEL")
 
@@ -103,6 +119,7 @@ def load_next_level():
         reset_game()
     else:
         show_endgame_screen()
+        showing_endgame = True
         # Ajouter une boucle pour maintenir l'écran de fin de jeu à l'affichage
         while True:
             for event in pygame.event.get():
@@ -452,6 +469,7 @@ selected_pos2 = None
 
 running = True
 showing_help = False
+showing_endgame = False
 
 while running:
     if showing_help:
@@ -468,6 +486,23 @@ while running:
                     mouse_pos = pygame.mouse.get_pos()
                     if click_on_button_close(mouse_pos):
                         showing_help = False
+
+        continue  # Continue à la prochaine itération de la boucle, en sautant le reste du code
+
+    if showing_endgame:
+        show_endgame_screen()
+        pygame.display.flip()
+
+        # Boucle interne pour attendre un clic de souris
+        while showing_endgame:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                    showing_endgame = False
+                elif event.type == pygame.MOUSEBUTTONUP:
+                    mouse_pos = pygame.mouse.get_pos()
+                    if click_on_button_close(mouse_pos):
+                        showing_endgame = False
 
         continue  # Continue à la prochaine itération de la boucle, en sautant le reste du code
 
@@ -529,6 +564,12 @@ while running:
                     showing_help = False
                 continue  # Continue à la prochaine itération pour éviter de traiter d'autres clics
 
+            if showing_endgame:
+                # Gestion des clics sur l'écran d'aide
+                if click_on_button_close(mouse_pos):
+                    showing_endgame = False
+                continue  # Continue à la prochaine itération pour éviter de traiter d'autres clics
+
             # Gestion des clics sur l'écran de jeu principal
             if click_on_button_new(mouse_pos):
                 high_score = update_high_score()
@@ -569,6 +610,9 @@ while running:
 
                     # Animation de l'échange
                     vitessEchange = 10 # plus petit = plus rapide
+                    swap_sound.set_volume(volume_FX)
+                    swap_sound.play()
+
                     for _ in range(vitessEchange):
                         # 1. Effacer l'écran
                         window.blit(fond, (0, 0))
@@ -610,6 +654,8 @@ while running:
                             if len(pos) == 2:
                                 i, j = pos
                                 pygame.draw.rect(window, color_White, (positions[i][j][0], positions[i][j][1], cell_size, cell_size), 1)
+                        aligner_sound.set_volume(volume_FX)
+                        aligner_sound.play()
 
                         pygame.display.flip()  # Mettre à jour l'affichage pour montrer la surbrillance
                         pygame.time.wait(500)  # Attendre 500 millisecondes (0.5 seconde)
@@ -636,4 +682,5 @@ while running:
 high_score = update_high_score()
 
 # Quitter Pygame une fois la boucle terminée
+pygame.mixer.quit()
 pygame.quit()
