@@ -5,6 +5,7 @@
 # Website = gilles-aubin.net
 # Version = 1.2.0
 
+import sys
 import pygame
 import random
 import json
@@ -118,33 +119,49 @@ def save_config_data(config_data):
         json.dump(config_data, file, indent=4)
 
 def load_next_level():
-    global levelToPlay, current_level, current_objectif, current_meilleurScore, high_score, showing_endgame
+    global levelToPlay, current_level, current_objectif, current_meilleurScore, high_score
 
     print("LOADNEXTLEVEL")
 
-    if levelToPlay < len(config_data['config']):  # Vérifier si ce n'est pas le dernier niveau
-        levelToPlay += 1
-    else:
-        save_progress(config_data)
-        # Si c'est le dernier niveau, réinitialisez levelToPlay à 1 pour ramener le joueur au premier niveau
-        levelToPlay = 1
+    draw_recap_screen()
 
-    current_level = config_data['config'][levelToPlay-1]
-    current_objectif = current_level['objectif']
-    current_meilleurScore = current_level['meilleurScore']
-    high_score = current_meilleurScore
-    reset_game()
-
-    # Si le joueur est revenu au premier niveau après avoir terminé tous les niveaux, affichez l'écran de fin de jeu
-    if levelToPlay == 1:
-        save_progress(config_data)
-        show_endgame_screen()
-        showing_endgame = True
-        # Ajouter une boucle pour maintenir l'écran de fin de jeu à l'affichage
-        while True:
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT or click_on_button_close(pygame.mouse.get_pos()):
-                    return
+    waiting_for_input = True
+    while waiting_for_input:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if click_on_button_retry(pygame.mouse.get_pos()):
+                    reset_game()
+                    waiting_for_input = False
+                elif click_on_button_next_level(pygame.mouse.get_pos()):
+                    if levelToPlay < len(config_data['config']):
+                        levelToPlay += 1
+                        # update_progression(levelToPlay)
+                        save_progress(config_data)
+                    else:
+                        # Si c'est le dernier niveau, affichez l'écran de fin de jeu
+                        save_progress(config_data)
+                        show_endgame_screen()
+                        # Ajoutez une boucle pour maintenir l'écran de fin de jeu à l'affichage
+                        while True:
+                            for event in pygame.event.get():
+                                if event.type == pygame.QUIT:
+                                    pygame.quit()
+                                    sys.exit()
+                                if event.type == pygame.MOUSEBUTTONUP:
+                                    if click_on_button_close(pygame.mouse.get_pos()):
+                                        levelToPlay = 1
+                                        current_level = config_data['config'][levelToPlay-1]
+                                        reset_game()
+                                        return
+                    current_level = config_data['config'][levelToPlay-1]
+                    current_objectif = current_level['objectif']
+                    current_meilleurScore = current_level['meilleurScore']
+                    high_score = current_meilleurScore
+                    reset_game()
+                    waiting_for_input = False
 
 # Fonction pour compter les symboles restants
 def count_remaining_symbols(grid):
@@ -205,13 +222,6 @@ def save_progress(config_data):
 
     save_config_data(config_data)
     print(f"SAVE PROGRESS\n>>> progression : {current_progress}")
-
-
-# # SAUVEGARDE MEILLEUR SCORE > OK
-# if config_data:
-#     if score > current_level['meilleurScore']:
-#         current_level['meilleurScore'] = score
-#         save_progress(config_data)
 
 
 #########################
@@ -431,9 +441,23 @@ def click_on_button_close(mouse_pos):
     return False
 
 
-##############
-# ECRAN AIDE #
-##############
+# >>>>>> BOUTONS RECAP
+
+# Variables des boutons RECAP
+
+def click_on_button_retry(pos):
+    return window_size[0] // 4 <= pos[0] <= window_size[0] // 4 + 100 and window_size[1] // 2 <= pos[1] <= window_size[1] // 2 + 50
+
+def click_on_button_next_level(pos):
+    return 3 * window_size[0] // 4 - 100 <= pos[0] <= 3 * window_size[0] // 4 and window_size[1] // 2 <= pos[1] <= window_size[1] // 2 + 50
+
+
+
+##########
+# ECRANS #
+##########
+
+# >>>>>> ECRAN AIDE
 
 def show_help_screen():
     print("SHOW HELPSCREEN")
@@ -442,9 +466,33 @@ def show_help_screen():
     pygame.display.flip()
 
 
-####################
-# ECRAN FIN DE JEU #
-####################
+# >>>>>> ECRAN RECAP
+
+def draw_recap_screen():
+    window.blit(fond, (0, 0))
+    font = pygame.font.Font("font/JetBrainsMono-Bold.ttf", 20)
+
+    # Afficher le score et le highscore
+    score_text = font.render(f"Score : {score}", True, color_White)
+    highscore_text = font.render(f"Meilleur score : {high_score}", True, color_White)
+
+    window.blit(score_text, (window_size[0] // 2 - score_text.get_width() // 2, window_size[1] // 4))
+    window.blit(highscore_text, (window_size[0] // 2 - highscore_text.get_width() // 2, window_size[1] // 4 + 30))
+
+    # Dessiner les boutons
+    pygame.draw.rect(window, color_White, (window_size[0] // 4, window_size[1] // 2, 100, 50),1)
+    font = pygame.font.Font("font/JetBrainsMono-Bold.ttf", 20)
+    text = font.render("Refaire", True, color_White)  # Assurez-vous d'avoir défini color_Black
+    window.blit(text, (window_size[0] // 4 + 50 - text.get_width() // 2, window_size[1] // 2 + 25 - text.get_height() // 2))
+
+    pygame.draw.rect(window, color_White, (3 * window_size[0] // 4 - 100, window_size[1] // 2, 100, 50),1)
+    font = pygame.font.Font("font/JetBrainsMono-Bold.ttf", 20)
+    text = font.render("Suivant", True, color_White)
+    window.blit(text, (3 * window_size[0] // 4 - 50 - text.get_width() // 2, window_size[1] // 2 + 25 - text.get_height() // 2))
+
+    pygame.display.flip()
+
+# >>>>>> ECRAN FIN DE JEU
 
 def show_endgame_screen():
     print("SHOW ENDGAME")
@@ -453,9 +501,7 @@ def show_endgame_screen():
     pygame.display.flip()
 
 
-#################
-# SPLASH SCREEN #
-#################
+# >>>>>> ECRAN ACCUEIL
 
 # Transition entre 2 images
 def fade_between_images(image1, image2):
@@ -644,10 +690,25 @@ while running:
 
                         # 2. Dessiner les éléments
                         factor = _ / vitessEchange
-                        pos1_x = lerp(positions[selected_pos1[1]][selected_pos1[0]][0], positions[selected_pos2[1]][selected_pos2[0]][0], factor)
-                        pos1_y = lerp(positions[selected_pos1[1]][selected_pos1[0]][1], positions[selected_pos2[1]][selected_pos2[0]][1], factor)
-                        pos2_x = lerp(positions[selected_pos2[1]][selected_pos2[0]][0], positions[selected_pos1[1]][selected_pos1[0]][0], factor)
-                        pos2_y = lerp(positions[selected_pos2[1]][selected_pos2[0]][1], positions[selected_pos1[1]][selected_pos1[0]][1], factor)
+
+                        # Pour pos1_x
+                        pos1_1 = positions[selected_pos1[1]][selected_pos1[0]]
+                        pos2_1 = positions[selected_pos2[1]][selected_pos2[0]]
+                        pos1_x = lerp(pos1_1[0], pos2_1[0], factor)
+
+                        # Pour pos1_y
+                        # Nous avons déjà défini pos1_1 et pos2_1 ci-dessus, donc nous pouvons les réutiliser
+                        pos1_y = lerp(pos1_1[1], pos2_1[1], factor)
+
+                        # Pour pos2_x
+                        pos1_2 = positions[selected_pos1[1]][selected_pos1[0]]  # C'est la même que pos1_1, mais pour la clarté, je la redéfinis
+                        pos2_2 = positions[selected_pos2[1]][selected_pos2[0]]
+                        pos2_x = lerp(pos2_2[0], pos1_2[0], factor)
+
+                        # Pour pos2_y
+                        # Nous avons déjà défini pos1_2 et pos2_2 ci-dessus, donc nous pouvons les réutiliser
+                        pos2_y = lerp(pos2_2[1], pos1_2[1], factor)
+
 
                         # Dessiner la grille sans les symboles en mouvement
                         draw_grid(grid, positions, symbols, cell_size, window, selected_pos1, selected_pos2, to_delete)
