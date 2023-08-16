@@ -4,7 +4,7 @@
 - Déplacez les AS pour en **aligner au moins 4** (un carré d'AS) et les faire disparaître.
 - Le jeu sauvegarde le meilleur score (visible dans l'encadré du haut)
 - Le bouton "Nouveau" réinitialise le jeu
-- Cliquer sur le meilleur score le réinitialise
+- Cliquer sur le cadre du meilleur score réinitialise le meilleur score ET la progression
 
 ## ATTENTION
 - Une case vide ne peut plus être occupée
@@ -16,3 +16,15 @@
 
 ## Pour jouer (temporaire)
 Pour jouer, il faut vous rendre sur Itch.io [>> K-RE-DAS sur Itch.io <<](https://studiocurieux.itch.io/k-re-das) !
+
+## Version
+- 15/08/2023 : 1.2.0
+    Mise en place de 7 niveaux
+    Sauvegarde de la progression
+    Mise en place des obstacles
+
+- 14/08/2023 : 1.1.0
+    Ajout de l'écran d'accueil
+    Ajout de la page d'aide
+
+- 04/08/2023 : 1.0.0

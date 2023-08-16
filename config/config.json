@@ -1,0 +1,47 @@
+{
+    "config": [
+        {
+            "level": 1,
+            "objectif": 81,
+            "progression": 1,
+            "meilleurScore": 1,
+            "obstacles": []
+        },
+        {
+            "level": 2,
+            "objectif": 82,
+            "progression": 0,
+            "meilleurScore": 2,
+            "obstacles": [
+                {
+                    "row": 4,
+                    "col": 4
+                },
+                {
+                    "row": 5,
+                    "col": 5
+                }
+            ]
+        },
+        {
+            "level": 3,
+            "objectif": 83,
+            "progression": 0,
+            "meilleurScore": 3,
+            "obstacles": [
+                {
+                    "row": 2,
+                    "col": 4
+                },
+                {
+                    "row": 5,
+                    "col": 2
+                },
+                {
+                    "row": 5,
+                    "col": 7
+                }
+            ]
+        }
+    ]
+}
