@@ -89,7 +89,7 @@ def save_config_data(config_data):
         json.dump(config_data, file, indent=4)
 
 def load_next_level():
-    global levelToPlay, current_level, current_objectif, current_meilleurScore
+    global levelToPlay, current_level, current_objectif, current_meilleurScore, high_score
 
     print("LOADNEXTLEVEL")
 
@@ -99,6 +99,7 @@ def load_next_level():
         current_level = config_data['config'][levelToPlay-1]
         current_objectif = current_level['objectif']
         current_meilleurScore = current_level['meilleurScore']
+        high_score = current_meilleurScore
         reset_game()
     else:
         show_endgame_screen()
