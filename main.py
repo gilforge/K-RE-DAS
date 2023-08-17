@@ -3,7 +3,7 @@
 ############
 # Author = Gilles Aubin
 # Website = gilles-aubin.net
-# Version = 1.2.0
+# Version = 1.3.1
 
 import sys
 import pygame
@@ -324,7 +324,8 @@ def draw_grid(grid, positions, symbols, cell_size, window, selected_pos1=None, s
                 centered_pos = (pos[0] + cell_size // 2 - symbol_size[0] // 2, pos[1] + cell_size // 2 - symbol_size[1] // 2)
                 window.blit(symbols[symbol], centered_pos)
                 if (i, j) == selected_pos1:  # If this is the selected symbol
-                    pygame.draw.rect(window, (color_Black), (grid_x + cell_x * cell_size, grid_y + cell_y * cell_size, cell_size, cell_size), 2)
+                    pygame.draw.rect(window, color_Black, (grid_x + i * cell_size, grid_y + j * cell_size, cell_size, cell_size), 2)
+                    # pygame.draw.rect(window, (color_Black), (grid_x + cell_x * cell_size, grid_y + cell_y * cell_size, cell_size, cell_size), 2)
 
                 # Si le symbole est à supprimer, dessinez une surbrillance
                 if (i, j) in to_delete:
@@ -688,14 +689,27 @@ while running:
                         # 1. Effacer l'écran
                         window.blit(fond, (0, 0))
 
+                        # Redessiner tous les éléments de l'UI
+                        window.blit(textTitle, (70,10))
+                        window.blit(textAuthor, (70,50))
+                        window.blit(textHighScore, (textHighScore_X,textHighScore_Y))
+                        pygame.draw.rect(window, color_White, (textHighScore_X - 10,textHighScore_Y,100,40), 2)
+                        window.blit(textScore, (450,15))
+                        window.blit(textLevel, (450, 5))
+                        draw_button_new()
+                        draw_button_help()
+                        draw_button_quit()
+                        
                         # 2. Dessiner les éléments
                         factor = _ / vitessEchange
 
                         # Pour pos1_x
                         pos1_1 = positions[selected_pos1[1]][selected_pos1[0]]
-                        pos2_1 = positions[selected_pos2[1]][selected_pos2[0]]
-                        pos1_x = lerp(pos1_1[0], pos2_1[0], factor)
-
+                        if selected_pos2 is not None:                            
+                            pos2_1 = positions[selected_pos2[1]][selected_pos2[0]]
+                            pos1_x = lerp(pos1_1[0], pos2_1[0], factor)
+                        else:
+                            continue
                         # Pour pos1_y
                         # Nous avons déjà défini pos1_1 et pos2_1 ci-dessus, donc nous pouvons les réutiliser
                         pos1_y = lerp(pos1_1[1], pos2_1[1], factor)
