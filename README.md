@@ -17,8 +17,7 @@
 - niveau 3 : il ne doit rester que 4 AS pour passer au niveau suivant
 
 ## Capture du jeu actuel
-![Capture du jeu v1.3.1](https://github.com/gilforge/K-RE-DAS/blob/master/img/K-RE-DAS_obstacles.png)
-
+![Capture du jeu v1.3.1](https://github.com/gilforge/K-RE-DAS/blob/feature/recap-screen/img/K-RE-DAS_obstacles.png)
 ## Pour jouer (temporaire)
 Pour jouer à la v 1.0.0, il faut vous rendre sur Itch.io [>> K-RE-DAS sur Itch.io <<](https://studiocurieux.itch.io/k-re-das) !
 
