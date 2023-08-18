@@ -41,17 +41,30 @@ grid_y = 75
 # IMAGES #
 ##########
 
-splash_image = pygame.image.load('img/splash_windows.png')  # Assurez-vous que l'image est dans le bon répertoire
-game_image = pygame.image.load('img/tapis.jpg')
+def load_image(filename):
+    try:
+        return pygame.image.load(filename)
+    except pygame.error:
+        print(f"Erreur lors du chargement de l'image : {filename}")
+        sys.exit()
+
+splash_image = load_image('img/splash_windows.png')  # Assurez-vous que l'image est dans le bon répertoire
+game_image = load_image('img/tapis.jpg')
 symbols = {
-    "pique": pygame.image.load('img/pique.png'),
-    "carreau": pygame.image.load('img/carreau.png'),
-    "coeur": pygame.image.load('img/coeur.png'),
-    "trefle": pygame.image.load('img/trefle.png')
+    "pique": load_image('img/pique.png'),
+    "carreau": load_image('img/carreau.png'),
+    "coeur": load_image('img/coeur.png'),
+    "trefle": load_image('img/trefle.png')
 }
-help_image = pygame.image.load('img/aide.jpg')
-endgame_image = pygame.image.load('img/findejeu.jpg')
-obstacle_image = pygame.image.load('img/obstacle.png')
+symbols_on = {
+    "pique": load_image('img/pique_on.png'),
+    "carreau": load_image('img/carreau_on.png'),
+    "coeur": load_image('img/coeur_on.png'),
+    "trefle": load_image('img/trefle_on.png')
+}
+help_image = load_image('img/aide.jpg')
+endgame_image = load_image('img/findejeu.jpg')
+obstacle_image = load_image('img/obstacle.png')
 
 
 ########
@@ -61,9 +74,16 @@ obstacle_image = pygame.image.load('img/obstacle.png')
 volume_FX = 0.5
 volume_ambiance = 0.5
 
+def load_sound(filename):
+    try:
+        return pygame.mixer.Sound(filename)
+    except pygame.error:
+        print(f"Erreur lors du chargement du son : {filename}")
+        sys.exit()
+
 ambiance_music = pygame.mixer.music.load("sons/ambiance.wav")
-swap_sound = pygame.mixer.Sound("sons/swap.ogg")
-aligner_sound = pygame.mixer.Sound("sons/aligner.ogg")
+swap_sound = load_sound("sons/swap.ogg")
+aligner_sound = load_sound("sons/aligner.ogg")
 
 pygame.mixer.music.play(-1)  # Le -1 signifie que la musique sera jouée en boucle indéfiniment
 pygame.mixer.music.set_volume(volume_ambiance)
@@ -81,8 +101,9 @@ def load_config_data() :
             if 'progression' not in data:
                 data['progression'] = 1
             return data
-    except FileNotFoundError :
-        return None
+    except (FileNotFoundError, json.JSONDecodeError):
+        print("Erreur lors du chargement du fichier de configuration.")
+        sys.exit()
 
 config_data = load_config_data()
 
@@ -303,33 +324,33 @@ window = pygame.display.set_mode(window_size)
 
 # Fonction qui dessine la grille et place les obstacles en fonction du niveau
 def draw_grid(grid, positions, symbols, cell_size, window, selected_pos1=None, selected_pos2=None, to_delete=None):
+    # Pré-calculer les tailles des images
+    obstacle_size = obstacle_image.get_size()
+    
+    # Convertir to_delete en set pour une recherche plus rapide
+    to_delete_set = set(to_delete) if to_delete else set()
+    
+    selected_positions = {selected_pos1, selected_pos2}
+
     for i in range(10):
         for j in range(10):
-
-            # Si la position actuelle est l'une des positions sélectionnées ET que les deux positions sont définies, continuez à la prochaine itération
-            if selected_pos2 is not None and ((i, j) == selected_pos1 or (i, j) == selected_pos2):
-                continue
-
             symbol = grid[i][j]
             pos = positions[i][j]
 
             if symbol == 'obstacle':
-                obstacle_size = obstacle_image.get_size()  # Obtenez la taille de l'image de l'obstacle
                 centered_obstacle_pos = (pos[0] + cell_size // 2 - obstacle_size[0] // 2, pos[1] + cell_size // 2 - obstacle_size[1] // 2)
                 window.blit(obstacle_image, centered_obstacle_pos)
+                continue
 
-                continue  # Passer à l'itération suivante si c'est un obstacle
             if symbol is not None:
-                symbol_size = symbols[symbol].get_size()  # Obtenez la taille du symbole
+                symbol_size = symbols[symbol].get_size()
                 centered_pos = (pos[0] + cell_size // 2 - symbol_size[0] // 2, pos[1] + cell_size // 2 - symbol_size[1] // 2)
-                window.blit(symbols[symbol], centered_pos)
-                if (i, j) == selected_pos1:  # If this is the selected symbol
-                    pygame.draw.rect(window, color_Black, (grid_x + i * cell_size, grid_y + j * cell_size, cell_size, cell_size), 2)
-                    # pygame.draw.rect(window, (color_Black), (grid_x + cell_x * cell_size, grid_y + cell_y * cell_size, cell_size, cell_size), 2)
-
-                # Si le symbole est à supprimer, dessinez une surbrillance
-                if (i, j) in to_delete:
-                    pygame.draw.rect(window, (255, 0, 0), (pos[0], pos[1], cell_size, cell_size), 3)
+                
+                # Si le symbole est sélectionné, utilisez la version "_on"
+                if (i, j) in selected_positions:
+                    window.blit(symbols_on[symbol], centered_pos)
+                else:
+                    window.blit(symbols[symbol], centered_pos)
 
 
 ###########
@@ -579,7 +600,7 @@ while running:
         continue  # Continue à la prochaine itération de la boucle, en sautant le reste du code
 
     # Remplir l'écran avec l'image de fond
-    image_fond = pygame.image.load("img/tapis.jpg")
+    image_fond = load_image("img/tapis.jpg")
     fond = pygame.transform.scale(image_fond, window_size)
     window.blit(fond,(0,0))
 
@@ -671,13 +692,13 @@ while running:
                     continue
                 if selected_symbol1 is None:  # If no symbol is selected yet
                     selected_symbol1 = grid[cell_y][cell_x]
-                    selected_pos1 = (cell_x, cell_y)
+                    selected_pos1 = (cell_y, cell_x)
                     # print(f"Symbole1 : {selected_symbol1} à la position {selected_pos1}")
 
                 else:  # If a symbol is already selected
                     if (cell_x, cell_y) != selected_pos1:
                         selected_symbol2 = grid[cell_y][cell_x]
-                        selected_pos2 = (cell_x, cell_y)
+                        selected_pos2 = (cell_y, cell_x)
                         # print(f"Symbole2 : {selected_symbol1} à la position {selected_pos1}")
 
                     # Animation de l'échange
@@ -728,16 +749,16 @@ while running:
                         draw_grid(grid, positions, symbols, cell_size, window, selected_pos1, selected_pos2, to_delete)
 
                         # Dessiner les symboles en mouvement à leurs positions interpolées
-                        window.blit(symbols[selected_symbol1], (pos1_x, pos1_y))
-                        window.blit(symbols[selected_symbol2], (pos2_x, pos2_y))
+                        window.blit(symbols[selected_symbol1], (pos1_y, pos1_x))
+                        window.blit(symbols[selected_symbol2], (pos2_y, pos2_x))
 
                         # 3. Mettre à jour l'affichage
 
                         pygame.time.wait(50)
                         pygame.display.flip()
                         # Échangez les symboles dans la grille
-                        grid[selected_pos1[1]][selected_pos1[0]] = selected_symbol2
-                        grid[selected_pos2[1]][selected_pos2[0]] = selected_symbol1
+                        grid[selected_pos1[0]][selected_pos1[1]] = selected_symbol2
+                        grid[selected_pos2[0]][selected_pos2[1]] = selected_symbol1
 
                     # Reset the selected symbols and positions
                     selected_symbol1 = None
