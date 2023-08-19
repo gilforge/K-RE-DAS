@@ -34,12 +34,36 @@
                     "col": 4
                 },
                 {
-                    "row": 5,
+                    "row": 7,
                     "col": 2
                 },
                 {
                     "row": 5,
                     "col": 7
+                }
+            ]
+        },
+        {
+            "level": 4,
+            "objectif": 0,
+            "progression": 0,
+            "meilleurScore": 0,
+            "obstacles": [
+                {
+                    "row": 1,
+                    "col": 1
+                },
+                {
+                    "row": 8,
+                    "col": 1
+                },
+                {
+                    "row": 1,
+                    "col": 8
+                },
+                {
+                    "row": 8,
+                    "col": 8
                 }
             ]
         }

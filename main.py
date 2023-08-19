@@ -3,7 +3,7 @@
 ############
 # Author = Gilles Aubin
 # Website = gilles-aubin.net
-# Version = 1.3.1
+# Version = 1.3.2
 
 import sys
 import pygame
@@ -144,7 +144,7 @@ def load_next_level():
 
     print("LOADNEXTLEVEL")
 
-    draw_recap_screen()
+    draw_recap_screen(fond)
 
     waiting_for_input = True
     while waiting_for_input:
@@ -490,7 +490,7 @@ def show_help_screen():
 
 # >>>>>> ECRAN RECAP
 
-def draw_recap_screen():
+def draw_recap_screen(fond):
     window.blit(fond, (0, 0))
     font = pygame.font.Font("font/JetBrainsMono-Bold.ttf", 20)
 
@@ -720,14 +720,14 @@ while running:
                         draw_button_new()
                         draw_button_help()
                         draw_button_quit()
-                        
+
                         # 2. Dessiner les éléments
                         factor = _ / vitessEchange
 
                         # Pour pos1_x
-                        pos1_1 = positions[selected_pos1[1]][selected_pos1[0]]
+                        pos1_1 = positions[selected_pos1[0]][selected_pos1[1]]
                         if selected_pos2 is not None:                            
-                            pos2_1 = positions[selected_pos2[1]][selected_pos2[0]]
+                            pos2_1 = positions[selected_pos2[0]][selected_pos2[1]]
                             pos1_x = lerp(pos1_1[0], pos2_1[0], factor)
                         else:
                             continue
@@ -736,8 +736,8 @@ while running:
                         pos1_y = lerp(pos1_1[1], pos2_1[1], factor)
 
                         # Pour pos2_x
-                        pos1_2 = positions[selected_pos1[1]][selected_pos1[0]]  # C'est la même que pos1_1, mais pour la clarté, je la redéfinis
-                        pos2_2 = positions[selected_pos2[1]][selected_pos2[0]]
+                        pos1_2 = positions[selected_pos1[0]][selected_pos1[1]]  # C'est la même que pos1_1, mais pour la clarté, je la redéfinis
+                        pos2_2 = positions[selected_pos2[0]][selected_pos2[1]]
                         pos2_x = lerp(pos2_2[0], pos1_2[0], factor)
 
                         # Pour pos2_y
@@ -748,14 +748,23 @@ while running:
                         # Dessiner la grille sans les symboles en mouvement
                         draw_grid(grid, positions, symbols, cell_size, window, selected_pos1, selected_pos2, to_delete)
 
-                        # Dessiner les symboles en mouvement à leurs positions interpolées
-                        window.blit(symbols[selected_symbol1], (pos1_y, pos1_x))
-                        window.blit(symbols[selected_symbol2], (pos2_y, pos2_x))
+                        # Calcul des décalages pour centrer le symbole
+                        symbol_width1, symbol_height1 = symbols[selected_symbol1].get_size()
+                        offset_x1 = (cell_size - symbol_width1) // 2
+                        offset_y1 = (cell_size - symbol_height1) // 2
+
+                        symbol_width2, symbol_height2 = symbols[selected_symbol2].get_size()
+                        offset_x2 = (cell_size - symbol_width2) // 2
+                        offset_y2 = (cell_size - symbol_height2) // 2
+
+                        # Dessiner les symboles en mouvement à leurs positions interpolées avec les décalages
+                        window.blit(symbols[selected_symbol1], (pos1_x + offset_x1, pos1_y + offset_y1))
+                        window.blit(symbols[selected_symbol2], (pos2_x + offset_x2, pos2_y + offset_y2))
 
                         # 3. Mettre à jour l'affichage
-
                         pygame.time.wait(50)
                         pygame.display.flip()
+
                         # Échangez les symboles dans la grille
                         grid[selected_pos1[0]][selected_pos1[1]] = selected_symbol2
                         grid[selected_pos2[0]][selected_pos2[1]] = selected_symbol1
