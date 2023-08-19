@@ -1,5 +1,5 @@
 # K-RE-DAS
-*pour Windows - développement en cours*
+*pour Windows
 - Puzzle game avec les AS du **POKER**
 - Déplacez les AS pour en **aligner au moins 4** (un carré d'AS) et les faire disparaître.
 - Le jeu sauvegarde le meilleur score du niveau (visible dans l'encadré du haut)
