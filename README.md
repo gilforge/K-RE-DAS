@@ -15,7 +15,7 @@
 - niveau 1 : il ne doit rester que 24 AS (ou moins) pour passer au niveau suivant
 - niveau 2 : il ne doit rester que 12 AS (ou moins) pour passer au niveau suivant
 - niveau 3 : il ne doit rester que 4 AS (ou moins) pour passer au niveau suivant
-_ niveau 4 : il ne doit rester aucun AS.
+- niveau 4 : il ne doit rester aucun AS.
 
 ## Capture du jeu actuel
 ![Capture du jeu v1.3.2](https://github.com/gilforge/K-RE-DAS/blob/feature/recap-screen/img/K-RE-DAS_obstacles_jetons.png)
