@@ -48,7 +48,7 @@ def load_image(filename):
         print(f"Erreur lors du chargement de l'image : {filename}")
         sys.exit()
 
-splash_image = load_image('img/splash_windows.png')  # Assurez-vous que l'image est dans le bon répertoire
+splash_image = load_image('img/splash_windows.jpg')  # Assurez-vous que l'image est dans le bon répertoire
 game_image = load_image('img/tapis.jpg')
 symbols = {
     "pique": load_image('img/pique.png'),
