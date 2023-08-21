@@ -18,7 +18,7 @@
 - niveau 4 : il ne doit rester aucun AS.
 
 ## Capture du jeu actuel
-![Capture du jeu v1.3.2](https://github.com/gilforge/K-RE-DAS/blob/feature/recap-screen/img/K-RE-DAS_obstacles_jetons.png)
+![Capture du jeu v1.3.2](https://github.com/gilforge/K-RE-DAS/blob/master/img/K-RE-DAS_obstacles_jetons.png)
 ## Pour jouer (temporaire)
 Pour jouer, il faut vous rendre sur Itch.io [>> K-RE-DAS sur Itch.io <<](https://studiocurieux.itch.io/k-re-das) !
 
