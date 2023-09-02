@@ -3,14 +3,13 @@
 ############
 # Author = Gilles Aubin
 # Website = gilles-aubin.net
-# Version = 1.3.2
+# Version = 1.4.0 (langues, orientation horizontale, bug de sélection sur les bords)
 
 import sys
 import pygame
 import random
 import json
 
-# Initialiser Pygame
 pygame.init()
 pygame.mixer.init()
 
@@ -19,22 +18,53 @@ pygame.mixer.init()
 # VARIABLES #
 #############
 
-# Définir les variables du jeu
+debug = True #>>>> CHANGE AVANT DE PUBLIER <<<<#
+
 game_title = "K-RE-DAS"
 pygame.display.set_caption(game_title)
 
-game_author = "by Gilles Aubin"
+game_author = "Gilles Aubin"
+game_url = "https://studiocurieux.itch.io/K-RE-DAS"
 score = 0
 margin = 50  # Espace pour le titre et le score
-window_size = (600, 650)  # Taille de la fenêtre
-cell_size = (window_size[0] - 2 * margin) // 10  # Taille de chaque cellule de la grille
 
-color_Black = (0, 0, 0)
-color_White = (204, 204, 204)
+delai_screen = 4000
 
-# Définir les coordonnées de la grille, du cadre et des cellules
-grid_x = 50
-grid_y = 75
+# Polices de caractères
+jetLight = "font/JetBrainsMono-Light.ttf"
+jetBold = "font/JetBrainsMono-Bold.ttf"
+jetExtraBold = "font/JetBrainsMono-ExtraBold.ttf"
+
+window_size = (1280, 720)
+demi_ecran = window_size[0] // 2
+
+noir = (0, 0, 0)
+blanc = (204, 204, 204)
+vert = (0, 86, 52)
+
+logoKredasX = 10
+logoKredasY = 10
+imageCartesX = 0
+imageCartesY = 500
+
+
+##############################
+# CONFIGURATION DE LA GRILLE #
+##############################
+
+colignes = [10,10] # Taille de la grille
+
+grid_width = 500  # Largeur de la grille
+grid_height = 500  # Hauteur de la grille
+
+cell_size = grid_width // colignes[1] # Largeur des cellules
+
+# Coordonnées de la grille
+grid_x = 655
+grid_y = 115
+
+pos_contourX = grid_x - 50
+pos_contourY = grid_y - 50
 
 
 ##########
@@ -45,11 +75,22 @@ def load_image(filename):
     try:
         return pygame.image.load(filename)
     except pygame.error:
-        print(f"Erreur lors du chargement de l'image : {filename}")
         sys.exit()
 
 splash_image = load_image('img/splash_windows.jpg')  # Assurez-vous que l'image est dans le bon répertoire
 game_image = load_image('img/tapis.jpg')
+logo_studio = load_image('img/logo_studiocurieux.png')
+logo_kredas = load_image('img/logo_kredas.png')
+image_cartes = load_image('img/4as.png')
+flag_en = load_image('img/flag_en.png')
+flag_fr = load_image('img/flag_fr.png')
+help_image = load_image('img/aide.jpg')
+endgame_image = load_image('img/findejeu.jpg')
+obstacle_image = load_image('img/obstacle.png')
+fond_mobile = load_image('img/fond_mobile.jpg')
+fond_pc = load_image('img/fond_pc.jpg')
+contour_table = load_image('img/contour_table.png')
+
 symbols = {
     "pique": load_image('img/pique.png'),
     "carreau": load_image('img/carreau.png'),
@@ -62,9 +103,29 @@ symbols_on = {
     "coeur": load_image('img/coeur_on.png'),
     "trefle": load_image('img/trefle_on.png')
 }
-help_image = load_image('img/aide.jpg')
-endgame_image = load_image('img/findejeu.jpg')
-obstacle_image = load_image('img/obstacle.png')
+
+logoKRDLarg = logo_kredas.get_width()
+contourLarg = contour_table.get_width()
+margeHRZ = (window_size[0] - (logoKRDLarg+contourLarg)) / 3
+
+###########
+# LANGUES #
+###########
+
+def load_language(language="fr_FR"):
+    global help_texts, ui_texts, end_texts  # Dictionnaires utilisé dans les fichiers de langues
+    if language == "en_US":
+        from languages import en_US as lang_module
+    elif language == "fr_FR":
+        from languages import fr_FR as lang_module
+    else:
+        from languages import en_US as lang_module  # Langue par défaut
+
+    help_texts = lang_module.help_texts
+    ui_texts = lang_module.ui_texts
+    end_texts = lang_module.end_texts
+
+load_language()
 
 
 ########
@@ -74,11 +135,14 @@ obstacle_image = load_image('img/obstacle.png')
 volume_FX = 0.5
 volume_ambiance = 0.5
 
+if debug :
+    volume_FX = 0
+    volume_ambiance = 0
+
 def load_sound(filename):
     try:
         return pygame.mixer.Sound(filename)
     except pygame.error:
-        print(f"Erreur lors du chargement du son : {filename}")
         sys.exit()
 
 ambiance_music = pygame.mixer.music.load("sons/ambiance.wav")
@@ -87,6 +151,121 @@ aligner_sound = load_sound("sons/aligner.ogg")
 
 pygame.mixer.music.play(-1)  # Le -1 signifie que la musique sera jouée en boucle indéfiniment
 pygame.mixer.music.set_volume(volume_ambiance)
+
+
+#############
+# FONCTIONS #
+#############
+
+# >>>>>> MODE DEBUG
+
+def modeDebug():
+    if debug:
+        mouse_x = mouse_pos[0]
+        mouse_y = mouse_pos[1]
+
+        # Afficher les coordonnées de la souris
+        coords_text = f"X: {mouse_x}, Y: {mouse_y}"
+        font = pygame.font.Font(jetBold, 20)  # Remplacez 'jetBold' par le chemin vers votre police si nécessaire
+        text_surface = font.render(coords_text, True, (255, 255, 255))
+        window.blit(text_surface, (5, 5))
+
+        # Dessiner un réticule en forme de croix
+        reticule_size = 2000  # Taille du réticule (longueur des lignes)
+
+        # Dessiner les lignes horizontales et verticales
+        pygame.draw.line(window, blanc, (mouse_x - reticule_size, mouse_y), (mouse_x + reticule_size, mouse_y), 2)
+        pygame.draw.line(window, blanc, (mouse_x, mouse_y - reticule_size), (mouse_x, mouse_y + reticule_size), 2)
+
+        pygame.display.flip()
+
+
+def ecrire(champ_texte, taille_texte, police, couleur, posX, posY, align="left", ecran="ui"):
+    font = pygame.font.Font(police, taille_texte)
+
+    if champ_texte == game_title or champ_texte == game_url or champ_texte == game_author or champ_texte == high_score or champ_texte == score:
+        text_surface = font.render(champ_texte, True, couleur)
+    elif ecran == "help":
+        text_surface = font.render(help_texts[champ_texte], True, couleur)
+    elif ecran == "end":
+        text_surface = font.render(end_texts[champ_texte].upper(), True, couleur)
+    elif ecran == "ui":
+        text_surface = font.render(ui_texts[champ_texte], True, couleur)
+    text_width, text_height = text_surface.get_size()
+  
+    if align == "center":
+        posX = (window_size[0] - text_width) // 2
+    elif align == "right":
+        posX = window_size[0] - text_width - posX
+
+    window.blit(text_surface, (posX, posY))
+
+def place_image(nom_image, posX, posY, position="left"):
+    if position == "center":
+        posX = (window_size[0] - nom_image.get_width()) // 2
+    elif position == "right":
+        posX = window_size[0] - nom_image.get_width() - posX
+
+    window.blit(nom_image, (posX, posY))
+
+# >>>>>> GENERATEUR DE BOUTON
+
+BTNlarg = 150
+BTNhaut = 40
+BTNcentre = (margeHRZ + logoKRDLarg/2) - BTNlarg/2
+
+textHighScore_X = demi_ecran - (BTNlarg /2)
+textHighScore_Y = 300
+
+buttons = {
+    'BTN_EN': pygame.Rect(425, 360, 48, 34),
+    'BTN_FR': pygame.Rect(850, 360, 48, 34),
+    'BTN_HS': pygame.Rect(textHighScore_X - 10, textHighScore_Y, 200, 40),
+    'BTN_NEW': pygame.Rect(BTNcentre, 350, BTNlarg, BTNhaut),
+    'BTN_HELP': pygame.Rect(BTNcentre, 400, BTNlarg, BTNhaut),
+    'BTN_QUIT': pygame.Rect(BTNcentre, 450, BTNlarg, BTNhaut),
+    'BTN_CLOSE': pygame.Rect(demi_ecran - BTNlarg /2, 570, BTNlarg, BTNhaut),
+    'BTN_RETRY': pygame.Rect(demi_ecran - BTNlarg * 1.5, 470, BTNlarg, BTNhaut),
+    'BTN_NEXT': pygame.Rect(demi_ecran + BTNlarg/2, 470, BTNlarg, BTNhaut),
+}
+
+def draw_button(CARAC_BTN, text_size, text_button=None) :
+
+    if text_button is not None:
+        # bouton = pygame.draw.rect(window, blanc, buttons[CARAC_BTN], 1)
+        bouton = buttons[CARAC_BTN]
+        font = pygame.font.Font(jetBold, text_size)
+        text = font.render(ui_texts[text_button], True, blanc)
+        window.blit(text, (buttons[CARAC_BTN].left + 10, buttons[CARAC_BTN].top + 5))
+
+        if bouton.collidepoint(mouse_pos):
+            bouton = pygame.draw.rect(window, noir, buttons[CARAC_BTN])
+            text = font.render(ui_texts[text_button], True, blanc)
+            window.blit(text, (buttons[CARAC_BTN].left + 10, buttons[CARAC_BTN].top + 5))
+        else:
+            bouton = pygame.draw.rect(window, blanc, buttons[CARAC_BTN], 1)
+            text = font.render(ui_texts[text_button], True, blanc)
+            window.blit(text, (buttons[CARAC_BTN].left + 10, buttons[CARAC_BTN].top + 5))
+
+        pygame.draw.rect(window, blanc, buttons[CARAC_BTN], 1)
+
+
+def click_on_button(CARAC_BTN):
+    mouse_pos = pygame.mouse.get_pos()
+    if CARAC_BTN in buttons:
+        if buttons[CARAC_BTN].left < mouse_pos[0] < (buttons[CARAC_BTN].left + buttons[CARAC_BTN].width) and buttons[CARAC_BTN].top < mouse_pos[1] < (buttons[CARAC_BTN].top + buttons[CARAC_BTN].height):
+            print(f"CLICK GENERIC BTN > {CARAC_BTN}")
+            return True
+        return False
+
+
+# >>>>>> BOUTON RESET HIGH SCORE
+
+# Détecter le clic sur le high score
+def click_on_button_HS(mouse_pos):
+    if textHighScore_X - 10 < mouse_pos[0] < (textHighScore_X - 10 + 100) and textHighScore_Y < mouse_pos[1] < (textHighScore_Y + 40): 
+        return True
+    return False
 
 
 ###########
@@ -102,7 +281,6 @@ def load_config_data() :
                 data['progression'] = 1
             return data
     except (FileNotFoundError, json.JSONDecodeError):
-        print("Erreur lors du chargement du fichier de configuration.")
         sys.exit()
 
 config_data = load_config_data()
@@ -135,32 +313,31 @@ current_obstacles = current_level['obstacles']
 
 
 def save_config_data(config_data):
-    print(f"SAVECONFIGDATA\n>>> config : {config_data}")
     with open('config/config.json', 'w') as file:
         json.dump(config_data, file, indent=4)
 
 def load_next_level():
     global levelToPlay, current_level, current_objectif, current_meilleurScore, high_score
 
-    print("LOADNEXTLEVEL")
-
-    draw_recap_screen(fond)
+    draw_recap_screen()
 
     waiting_for_input = True
     while waiting_for_input:
+        mouse_pos = pygame.mouse.get_pos()
+
         for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
             if event.type == pygame.MOUSEBUTTONDOWN:
-                if click_on_button_retry(pygame.mouse.get_pos()):
+                if click_on_button("BTN_RETRY"):
                     reset_game()
+                    print("CLICK RETRY > after reset")
                     waiting_for_input = False
-                elif click_on_button_next_level(pygame.mouse.get_pos()):
+                elif click_on_button("BTN_NEXT"):
+                    print(f"LevelToPlay {levelToPlay}")
                     if levelToPlay < len(config_data['config']):
                         levelToPlay += 1
                         # update_progression(levelToPlay)
                         save_progress(config_data)
+                        print(f"CLICK NEXT {mouse_pos}")
                     else:
                         # Si c'est le dernier niveau, affichez l'écran de fin de jeu
                         save_progress(config_data)
@@ -168,11 +345,8 @@ def load_next_level():
                         # Ajoutez une boucle pour maintenir l'écran de fin de jeu à l'affichage
                         while True:
                             for event in pygame.event.get():
-                                if event.type == pygame.QUIT:
-                                    pygame.quit()
-                                    sys.exit()
                                 if event.type == pygame.MOUSEBUTTONUP:
-                                    if click_on_button_close(pygame.mouse.get_pos()):
+                                    if click_on_button("BTN_CLOSE"):
                                         levelToPlay = 1
                                         current_level = config_data['config'][levelToPlay-1]
                                         reset_game()
@@ -192,7 +366,6 @@ def count_remaining_symbols(grid):
             if cell in symbols.keys():  # Vérifier si la cellule contient un symbole
                 count += 1
     return count
-
 
 #########
 # SCORE #
@@ -224,9 +397,9 @@ def update_high_score():
 # REINITIALISER > OK
 def reset_game():
     global config_data, grid, score
-    grid = initialize_grid()
+    grid = initialize_grid(*colignes)
     score = 0
-    print(f"RESSET GAME\n>>> {score}")
+    print(f"RESET GAME\n>>> {score}")
     return grid, score
 
 # SAUVEGARDE PROGRESSION
@@ -249,33 +422,34 @@ def save_progress(config_data):
 # INITIALISER LA GRILLE #
 #########################
 
-def initialize_grid():
+def initialize_grid(*colignes):
     global config_data
     grid = []
     symbol_counts = {"pique": 0, "carreau": 0, "coeur": 0, "trefle": 0}
     symbols_list = list(symbols.keys())
+    max_count = (colignes[0] * colignes[1]) // len(symbols_list)  # Calculer le nombre maximum de fois qu'un symbole peut apparaître
 
-    for i in range(10):
+    for i in range(colignes[0]):
         row = []
-        for j in range(10):
+        for j in range(colignes[1]):
             if any(obstacle['row'] == i and obstacle['col'] == j for obstacle in current_level['obstacles']):
                 row.append('obstacle')  # Ajouter un obstacle
             else:
-                # Choisir un symbole qui n'a pas encore été ajouté 25 fois
-                available_symbols = [symbol for symbol in symbols_list if symbol_counts[symbol] < 25]
+                # Choisir un symbole qui n'a pas encore atteint son maximum
+                available_symbols = [symbol for symbol in symbols_list if symbol_counts[symbol] < max_count]
                 chosen_symbol = random.choice(available_symbols)
                 row.append(chosen_symbol)
                 symbol_counts[chosen_symbol] += 1  # Incrémenter le compteur pour le symbole choisi
         grid.append(row)
     return grid
 
-grid = initialize_grid()
+grid = initialize_grid(10,10)
 
 # Créer une grille vide pour les positions des symboles
 positions = []
-for i in range(10):
+for i in range(colignes[0]):
     row = []
-    for j in range(10):
+    for j in range(colignes[1]):
         # La position initiale est basée sur l'indice de la cellule
         row.append((grid_x + j * cell_size, grid_y + i * cell_size))
     positions.append(row)
@@ -288,21 +462,21 @@ for i in range(10):
 def check_alignments(grid):
     to_delete = []
     global score
-    for i in range(10):
-        for j in range(10):
+    for i in range(colignes[0]):
+        for j in range(colignes[1]):
             # Vérifier l'alignement horizontal
-            if j <= 6:
+            if j <= colignes[0] - 4:
                 k = 0
-                while j+k+1 < 10 and grid[i][j] is not None and grid[i][j] == grid[i][j+k+1]:
+                while j+k+1 < colignes[0] and grid[i][j] is not None and grid[i][j] == grid[i][j+k+1]:
                     k += 1
                 if k >= 3:
                     for l in range(k+1):
                         to_delete.append((i, j + l))
                     score += 4  # Ajouter 4 points pour chaque alignement
             # Vérifier l'alignement vertical
-            if i <= 6:
+            if i <= colignes[1] - 4:
                 k = 0
-                while i+k+1 < 10 and grid[i][j] is not None and grid[i][j] == grid[i+k+1][j]:
+                while i+k+1 < colignes[1] and grid[i][j] is not None and grid[i][j] == grid[i+k+1][j]:
                     k += 1
                 if k >= 3:
                     for l in range(k+1):
@@ -322,8 +496,7 @@ def lerp(start, end, factor):
 # Créer une fenêtre
 window = pygame.display.set_mode(window_size)
 
-# Fonction qui dessine la grille et place les obstacles en fonction du niveau
-def draw_grid(grid, positions, symbols, cell_size, window, selected_pos1=None, selected_pos2=None, to_delete=None):
+def draw_grid(grid, positions, symbols, cell_size, window, rows, cols, selected_pos1=None, selected_pos2=None, to_delete=None):
     # Pré-calculer les tailles des images
     obstacle_size = obstacle_image.get_size()
     
@@ -332,8 +505,8 @@ def draw_grid(grid, positions, symbols, cell_size, window, selected_pos1=None, s
     
     selected_positions = {selected_pos1, selected_pos2}
 
-    for i in range(10):
-        for j in range(10):
+    for i in range(rows):
+        for j in range(cols):
             symbol = grid[i][j]
             pos = positions[i][j]
 
@@ -353,201 +526,158 @@ def draw_grid(grid, positions, symbols, cell_size, window, selected_pos1=None, s
                     window.blit(symbols[symbol], centered_pos)
 
 
-###########
-# BOUTONS #
-###########
-
-# >>>>>> BOUTON RESET HIGH SCORE
-
-# Détecter le clic sur le high score
-def click_on_button_HS(mouse_pos):
-    if textHighScore_X - 10 < mouse_pos[0] < (textHighScore_X - 10 + 100) and textHighScore_Y < mouse_pos[1] < (textHighScore_Y + 40): 
-        return True
-    return False
-
-
-# >>>>>> BOUTON NOUVEAU
-
-# Variables du bouton NOUVEAU
-width_new = 152
-height_new = 40
-posX_new = 58
-posY_new = 590
-posX_text_new = posX_new + 10
-posY_text_new = posY_new + 5
-
-def draw_button_new():
-    pygame.draw.rect(window, color_White, (posX_new, posY_new, width_new, height_new),1)
-    font_new = pygame.font.Font("font/JetBrainsMono-Bold.ttf", 20)
-    text_new = font_new.render("Nouveau", True, color_White) 
-    window.blit(text_new, (posX_text_new, posY_text_new)) 
-
-# Détecter le clic sur le bouton Nouveau
-def click_on_button_new(mouse_pos):
-    if posX_new < mouse_pos[0] < (posX_new + width_new) and posY_new < mouse_pos[1] < (posY_new + height_new): 
-        print("BOUTON NOUVEAU")
-        return True
-    return False
-
-
-# >>>>>> BOUTON AIDE
-
-# Variables du bouton AIDE
-width_help = 152
-height_help = 40
-posX_help = posX_new + width_new + 10
-posY_help = 590
-posX_text_help = posX_help + 10
-posY_text_help = posY_help + 5
-
-def draw_button_help():
-    pygame.draw.rect(window, color_White, (posX_help, posY_help, width_help, height_help), 1)
-    font_help = pygame.font.Font("font/JetBrainsMono-Bold.ttf", 20)
-    text_help = font_help.render("Aide", True, color_White)
-    window.blit(text_help, (posX_text_help, posY_text_help))
-
-# Détecter le clic sur le bouton Aide
-def click_on_button_help(mouse_pos):
-    if posX_help < mouse_pos[0] < (posX_help + width_help) and posY_help < mouse_pos[1] < (posY_help + height_help):
-        print(f"{showing_help} | BOUTON AIDE")
-        return True
-    return False
-
-
-# >>>>>> BOUTON QUITTER
-
-# Variables du bouton QUITTER
-width_quit = 152
-height_quit = 40
-posX_quit = posX_help + width_help + 10
-posY_quit = 590
-posX_text_quit = posX_quit + 10
-posY_text_quit = posY_quit + 5
-
-def draw_button_quit():
-    pygame.draw.rect(window, color_White, (posX_quit, posY_quit, width_quit, height_quit),1)
-    font_quit = pygame.font.Font("font/JetBrainsMono-Bold.ttf", 20)
-    text_quit = font_quit.render("Quitter", True, color_White) 
-    window.blit(text_quit, (posX_text_quit, posY_text_quit)) 
-
-# Détecter le clic sur le bouton QUITTER
-def click_on_button_quit(mouse_pos):
-    if posX_quit < mouse_pos[0] < (posX_quit + width_quit) and posY_quit < mouse_pos[1] < (posY_quit + height_quit): 
-        print("BOUTON QUITTER")
-        return True
-    return False
-
-
-# >>>>>> BOUTON FERMER
-
-# Variables du bouton FERMER
-width_close = 152
-height_close = 40
-posX_close = posX_new + width_new + 10
-posY_close = 590
-posX_text_close = posX_close + 10
-posY_text_close = posY_close + 5
-
-# Dessiner le bouton Fermer
-def draw_button_close():
-    pygame.draw.rect(window, color_White, (posX_close, posY_close, width_close, height_close), 1)
-    font_close = pygame.font.Font("font/JetBrainsMono-Bold.ttf", 20)
-    text_close = font_close.render("Fermer", True, color_White)
-    window.blit(text_close, (posX_text_close, posY_text_close))
-
-# Détecter le clic sur le bouton Fermer
-def click_on_button_close(mouse_pos):
-    if posX_close < mouse_pos[0] < (posX_close + width_close) and posY_close < mouse_pos[1] < (posY_close + height_close):
-        print("BOUTON FERMER")
-        return True
-    return False
-
-
-# >>>>>> BOUTONS RECAP
-
-# Variables des boutons RECAP
-
-def click_on_button_retry(pos):
-    return window_size[0] // 4 <= pos[0] <= window_size[0] // 4 + 100 and window_size[1] // 2 <= pos[1] <= window_size[1] // 2 + 50
-
-def click_on_button_next_level(pos):
-    return 3 * window_size[0] // 4 - 100 <= pos[0] <= 3 * window_size[0] // 4 and window_size[1] // 2 <= pos[1] <= window_size[1] // 2 + 50
-
-
-
 ##########
 # ECRANS #
 ##########
 
+# >>>>>> ECRAN LANGUES
+
+def show_language_screen():
+    global jetBold
+
+    window.blit(fond_pc, (0,0))
+
+    # Dessiner le titre
+    # ecrire("ui_lang", 36, jetBold, blanc, 50, 100, align="center")
+
+    flagEN_posX = buttons["BTN_EN"].x
+    flagEN_posY = buttons["BTN_EN"].y
+    flagFR_posX = buttons["BTN_FR"].x
+    flagFR_posY = buttons["BTN_FR"].y
+
+    place_image(flag_en, flagEN_posX, flagEN_posY)
+    place_image(flag_fr, flagFR_posX, flagFR_posY)
+
+    if click_on_button("BTN_EN"):
+        load_language("en_US")
+
+    elif click_on_button("BTN_FR"):
+        load_language("fr_FR")
+        
+    # place_image(image_cartes, imageCartesX, imageCartesY)
+
+    pygame.display.flip()
+    # Attente de l'interaction de l'utilisateur
+    waiting_for_input = True
+    while waiting_for_input:
+        for event in pygame.event.get():
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                mouse_pos = pygame.mouse.get_pos()
+                if click_on_button("BTN_EN"):
+                    load_language("en_US")
+                    waiting_for_input = False
+                elif click_on_button("BTN_FR"):
+                    load_language("fr_FR")
+                    waiting_for_input = False
+
+
+# >>>>>> SPLASH SCREEN
+
+def show_splashscreen():
+
+    # Dessinez tout pour le splash screen
+    window.blit(fond_pc, (0, 0))
+    place_image(logo_studio, 50, 50, position="center")
+    ecrire("ui_present", 22, jetBold, blanc, 50, 120, align="center")
+    place_image(logo_kredas, demi_ecran, 260, position="center")
+    place_image(image_cartes, imageCartesX, imageCartesY)
+
+    pygame.display.flip()
+    pygame.time.wait(delai_screen)
+
+
 # >>>>>> ECRAN AIDE
 
 def show_help_screen():
-    print("SHOW HELPSCREEN")
-    window.blit(help_image, (0, 0))
-    draw_button_close()
+    global jetBold
+
+    # Dessiner le fond
+    window.blit(fond_pc, (0,0))
+
+    ecrire("help_how", 24, jetBold, blanc, 100, 80, align="center", ecran="help")
+    place_image(logo_kredas, logoKredasX, 120, position="center")
+    ecrire("help_rule1line1", 22, jetBold, blanc, 50, 270, align="center", ecran="help")
+    ecrire("help_rule1line2", 22, jetBold, blanc, 50, 300, align="center", ecran="help")
+    ecrire("help_rule2line1", 22, jetBold, blanc, 50, 370, align="center", ecran="help")
+    ecrire("help_rule2line2", 22, jetBold, blanc, 50, 400, align="center", ecran="help")
+    ecrire("help_rule3line1", 22, jetBold, blanc, 50, 470, align="center", ecran="help")
+    ecrire("help_rule3line2", 22, jetBold, blanc, 50, 500, align="center", ecran="help")
+
+    draw_button("BTN_CLOSE", 20, "ui_close")
+    place_image(image_cartes, imageCartesX, imageCartesY)
+
     pygame.display.flip()
 
 
 # >>>>>> ECRAN RECAP
 
-def draw_recap_screen(fond):
-    window.blit(fond, (0, 0))
-    font = pygame.font.Font("font/JetBrainsMono-Bold.ttf", 20)
+def draw_recap_screen():
+    mouse_pos = pygame.mouse.get_pos()
+
+    window.blit(fond_pc, (0, 0))
+    font = pygame.font.Font(jetBold, 40)
+    place_image(logo_kredas, logoKredasX, 120, position="center")
 
     # Afficher le score et le highscore
-    score_text = font.render(f"Score : {score}", True, color_White)
-    highscore_text = font.render(f"Meilleur score : {high_score}", True, color_White)
+    score_text = font.render(f"{score}", True, blanc)
+    ecrire("ui_score", 20, jetBold, blanc, demi_ecran - 180, 280, align="left",ecran="ui")
+    window.blit(score_text, (demi_ecran - 200 + 20, 330))
 
-    window.blit(score_text, (window_size[0] // 2 - score_text.get_width() // 2, window_size[1] // 4))
-    window.blit(highscore_text, (window_size[0] // 2 - highscore_text.get_width() // 2, window_size[1] // 4 + 30))
+    highscore_text = font.render(f"{high_score}", True, blanc)
+    ecrire("ui_best", 20, jetBold, blanc, demi_ecran + 60, 280, align="left",ecran="ui")
+    window.blit(highscore_text, (demi_ecran + 120, 330))
 
     # Dessiner les boutons
-    pygame.draw.rect(window, color_White, (window_size[0] // 4, window_size[1] // 2, 100, 50),1)
-    font = pygame.font.Font("font/JetBrainsMono-Bold.ttf", 20)
-    text = font.render("Refaire", True, color_White)  # Assurez-vous d'avoir défini color_Black
-    window.blit(text, (window_size[0] // 4 + 50 - text.get_width() // 2, window_size[1] // 2 + 25 - text.get_height() // 2))
+    draw_button("BTN_RETRY", 20, "ui_retry")
+    draw_button("BTN_NEXT", 20, "ui_next")
 
-    pygame.draw.rect(window, color_White, (3 * window_size[0] // 4 - 100, window_size[1] // 2, 100, 50),1)
-    font = pygame.font.Font("font/JetBrainsMono-Bold.ttf", 20)
-    text = font.render("Suivant", True, color_White)
-    window.blit(text, (3 * window_size[0] // 4 - 50 - text.get_width() // 2, window_size[1] // 2 + 25 - text.get_height() // 2))
+    place_image(image_cartes, imageCartesX, imageCartesY)
 
     pygame.display.flip()
+
 
 # >>>>>> ECRAN FIN DE JEU
 
 def show_endgame_screen():
     print("SHOW ENDGAME")
-    window.blit(endgame_image, (0, 0))
-    draw_button_close()
+
+    global jetBold
+
+    # Dessiner le fond
+    window.fill((vert))
+    window.blit(fond_pc, (0, 0))
+
+    ecrire("end_well", 70, jetBold, blanc, 50, 150, align="center",ecran="end")
+    ecrire("end_completed", 22, jetBold, blanc, 50, 230, align="center",ecran="end")
+    ecrire("end_work", 22, jetBold, blanc, 50, 300, align="center",ecran="end")
+    ecrire("end_share", 22, jetBold, blanc, 50, 330, align="center",ecran="end")
+    ecrire(game_title, 45, jetBold, blanc, 50, 350, align="center",ecran="end")
+    ecrire(game_url, 22, jetBold, blanc, 50, 430, align="center",ecran="end")
+
+    draw_button("BTN_CLOSE", 20, "ui_close")
+
+    place_image(image_cartes, imageCartesX, imageCartesY)
+
     pygame.display.flip()
 
 
-# >>>>>> ECRAN ACCUEIL
+# >>>>>> DECOR
 
-# Transition entre 2 images
-def fade_between_images(image1, image2):
-    for i in range(256):
-        alpha = i  # Alpha pour l'image1
-        beta = 255 - i  # Alpha pour l'image2
+def poseDecor():
+    fond = pygame.transform.scale(game_image, window_size)
+    window.blit(fond,(0,0))
+    place_image(logo_kredas, 63, 65)
+    place_image(image_cartes, imageCartesX, imageCartesY)
+    place_image(contour_table, pos_contourX, pos_contourY)
 
-        # Créez une copie temporaire des images avec les valeurs alpha appropriées
-        splash_temp = image2.copy()
-        game_temp = image1.copy()
-        splash_temp.set_alpha(alpha)
-        game_temp.set_alpha(beta)
 
-        # Dessinez les images avec les valeurs alpha
-        window.blit(splash_temp, (0, 0))
-        window.blit(game_temp, (0, 0))
+####################
+# LANCEMENT DU JEU #
+####################
 
-        # Mettez à jour l'affichage
-        pygame.display.flip()
-
-        # Attendez un peu pour voir l'effet de fondu
-        pygame.time.wait(3)  # Attendre 10 millisecondes
-
-fade_between_images(splash_image, game_image)
+if debug is not True :
+    show_splashscreen()
+    show_language_screen()
 
 
 #####################
@@ -565,6 +695,17 @@ showing_help = False
 showing_endgame = False
 
 while running:
+    mouse_pos = pygame.mouse.get_pos()
+
+    modeDebug()
+
+
+# >>>>>> DECOR
+
+    poseDecor()
+
+# >>>>>> ECRAN AIDE
+
     if showing_help:
         show_help_screen()
         pygame.display.flip()
@@ -576,11 +717,13 @@ while running:
                     running = False
                     showing_help = False
                 elif event.type == pygame.MOUSEBUTTONUP:
-                    mouse_pos = pygame.mouse.get_pos()
-                    if click_on_button_close(mouse_pos):
+                    if click_on_button("BTN_CLOSE"):
                         showing_help = False
 
         continue  # Continue à la prochaine itération de la boucle, en sautant le reste du code
+
+
+# >>>>>> ECRAN FIN DE JEU
 
     if showing_endgame:
         show_endgame_screen()
@@ -593,52 +736,41 @@ while running:
                     running = False
                     showing_endgame = False
                 elif event.type == pygame.MOUSEBUTTONUP:
-                    mouse_pos = pygame.mouse.get_pos()
-                    if click_on_button_close(mouse_pos):
+                    if click_on_button("BTN_CLOSE"):
                         showing_endgame = False
 
         continue  # Continue à la prochaine itération de la boucle, en sautant le reste du code
 
-    # Remplir l'écran avec l'image de fond
-    image_fond = load_image("img/tapis.jpg")
-    fond = pygame.transform.scale(image_fond, window_size)
-    window.blit(fond,(0,0))
 
-    # Titre
-    fontTitle = pygame.font.Font("font/JetBrainsMono-ExtraBold.ttf", 36)
-    textTitle = fontTitle.render(game_title, True, color_White)
-    window.blit(textTitle, (70,10))
+# >>>>>> INTERFACE
 
-    # Nom de l'auteur
-    fontAuthor = pygame.font.Font("font/JetBrainsMono-Light.ttf", 12)
-    textAuthor = fontAuthor.render(game_author, True, color_White)
-    window.blit(textAuthor, (70,50))  # -30 pour le rapprocher du titre
+    # ecrire(game_title, 36, jetExtraBold, blanc, demi_ecran /2 - (logo_kredas.get_width() /2), 110) # Titre
+
+    # Niveau
+    fontLevel = pygame.font.Font("font/JetBrainsMono-Bold.ttf", 24)
+    textLevel = fontLevel.render(f"{ui_texts['ui_level']} : {levelToPlay:02}", True, blanc)
+    window.blit(textLevel, (margeHRZ+(logoKRDLarg/2) - (textLevel.get_width()/2), 200))  # Vous pouvez ajuster la position selon vos besoins
 
     # Score le plus élevé
-    textHighScore_X = 300
-    textHighScore_Y = 15
     fontHighScore = pygame.font.Font("font/JetBrainsMono-Bold.ttf", 32)
-    textHighScore = fontHighScore.render(f"{high_score:04}", True, color_White)
-    window.blit(textHighScore, (textHighScore_X,textHighScore_Y))
-    high_score_BTN = pygame.draw.rect(window, color_White, (textHighScore_X - 10,textHighScore_Y,100,40), 2)
+    textHighScore = fontHighScore.render(f"{high_score:04}", True, blanc)
+    window.blit(textHighScore, (margeHRZ+(logoKRDLarg/2) - (textLevel.get_width()/2), 250))
+    draw_button("BTN_HS", 32, text_button=None)
+    # high_score_BTN = pygame.draw.rect(window, blanc, (textHighScore_X - 10,textHighScore_Y,200,40), 2)
 
     # Score
     fontScore = pygame.font.Font("font/JetBrainsMono-Bold.ttf", 32)
-    textScore = fontScore.render(f"{score:04}", True, color_White)
-    window.blit(textScore, (450,15))
+    textScore = fontScore.render(f"{score:04}", True, blanc)
+    window.blit(textScore, (margeHRZ+(logoKRDLarg/2) - (textLevel.get_width()/2), 300))
 
-    # Niveau
-    fontLevel = pygame.font.Font("font/JetBrainsMono-Bold.ttf", 12)
-    textLevel = fontLevel.render(f"Level: {levelToPlay}", True, color_White)
-    window.blit(textLevel, (450, 5))  # Vous pouvez ajuster la position selon vos besoins
 
-    draw_button_new()
-    draw_button_help()
-    draw_button_quit()
+    draw_button("BTN_NEW", 20, "ui_new")
+    draw_button("BTN_HELP", 20, "ui_help")
+    draw_button("BTN_QUIT", 20, "ui_quit")
 
     to_delete = []
 
-    draw_grid(grid, positions, symbols, cell_size, window, selected_pos1, selected_pos2, to_delete)
+    draw_grid(grid, positions, symbols, cell_size, window, colignes[0], colignes[1], selected_pos1, selected_pos2, to_delete)
 
     # Mettre à jour l'affichage
     pygame.display.flip()
@@ -649,37 +781,37 @@ while running:
             running = False
 
         elif event.type == pygame.MOUSEBUTTONUP:
-            mouse_pos = pygame.mouse.get_pos()
+            # mouse_pos = pygame.mouse.get_pos()
 
             if showing_help:
                 # Gestion des clics sur l'écran d'aide
-                if click_on_button_close(mouse_pos):
+                if click_on_button("BTN_CLOSE"):
                     showing_help = False
                 continue  # Continue à la prochaine itération pour éviter de traiter d'autres clics
 
             if showing_endgame:
                 # Gestion des clics sur l'écran d'aide
-                if click_on_button_close(mouse_pos):
+                if click_on_button("BTN_CLOSE"):
                     showing_endgame = False
                 continue  # Continue à la prochaine itération pour éviter de traiter d'autres clics
 
             # Gestion des clics sur l'écran de jeu principal
-            if click_on_button_new(mouse_pos):
+            if click_on_button("BTN_NEW"):
                 high_score = update_high_score()
                 reset_game()
 
-            elif click_on_button_quit(mouse_pos):
+            elif click_on_button("BTN_QUIT"):
                 high_score = update_high_score()
                 running = False
 
-            elif click_on_button_help(mouse_pos):
+            elif click_on_button("BTN_HELP"):
                 showing_help = True
                 show_help_screen()
 
-            if high_score_BTN.collidepoint(mouse_pos):
-                pygame.draw.rect(window, color_Black, high_score_BTN)
+            if buttons["BTN_HS"].collidepoint(mouse_pos):
+                pygame.draw.rect(window, noir, buttons["BTN_HS"])
 
-            if click_on_button_HS(mouse_pos):
+            if click_on_button("BTN_HS"):
                 high_score = 0
                 score = 0
                 update_high_score()
@@ -687,7 +819,7 @@ while running:
             cell_x = (mouse_pos[0] - grid_x) // cell_size
             cell_y = (mouse_pos[1] - grid_y) // cell_size
 
-            if 0 <= cell_x < 10 and 0 <= cell_y < 10 and grid[cell_y][cell_x] is not None:
+            if 0 <= cell_x < colignes[0] and 0 <= cell_y < colignes[1] and grid[cell_y][cell_x] is not None:
                 if grid[cell_y][cell_x] == 'obstacle':  # Si c'est un obstacle, ignorez la sélection
                     continue
                 if selected_symbol1 is None:  # If no symbol is selected yet
@@ -708,18 +840,23 @@ while running:
 
                     for _ in range(vitessEchange):
                         # 1. Effacer l'écran
-                        window.blit(fond, (0, 0))
+                        window.blit(fond_pc, (0, 0))
 
                         # Redessiner tous les éléments de l'UI
-                        window.blit(textTitle, (70,10))
-                        window.blit(textAuthor, (70,50))
+                        # window.blit(textTitle, (70,10))
+                        ecrire(game_title, 36, jetExtraBold, blanc, 70, 10)
+
+                        # window.blit(textAuthor, (70,50))
+                        ecrire(game_author, 12, jetLight, blanc, 70, 50)
+
                         window.blit(textHighScore, (textHighScore_X,textHighScore_Y))
-                        pygame.draw.rect(window, color_White, (textHighScore_X - 10,textHighScore_Y,100,40), 2)
+                        pygame.draw.rect(window, blanc, (textHighScore_X - 10,textHighScore_Y,100,40), 2)
                         window.blit(textScore, (450,15))
                         window.blit(textLevel, (450, 5))
-                        draw_button_new()
-                        draw_button_help()
-                        draw_button_quit()
+
+                        draw_button("BTN_NEW", 20, "ui_new")
+                        draw_button("BTN_HELP", 20, "ui_help")
+                        draw_button("BTN_QUIT", 20, "ui_quit")
 
                         # 2. Dessiner les éléments
                         factor = _ / vitessEchange
@@ -731,22 +868,16 @@ while running:
                             pos1_x = lerp(pos1_1[0], pos2_1[0], factor)
                         else:
                             continue
-                        # Pour pos1_y
-                        # Nous avons déjà défini pos1_1 et pos2_1 ci-dessus, donc nous pouvons les réutiliser
                         pos1_y = lerp(pos1_1[1], pos2_1[1], factor)
 
                         # Pour pos2_x
-                        pos1_2 = positions[selected_pos1[0]][selected_pos1[1]]  # C'est la même que pos1_1, mais pour la clarté, je la redéfinis
+                        pos1_2 = positions[selected_pos1[0]][selected_pos1[1]]
                         pos2_2 = positions[selected_pos2[0]][selected_pos2[1]]
                         pos2_x = lerp(pos2_2[0], pos1_2[0], factor)
-
-                        # Pour pos2_y
-                        # Nous avons déjà défini pos1_2 et pos2_2 ci-dessus, donc nous pouvons les réutiliser
                         pos2_y = lerp(pos2_2[1], pos1_2[1], factor)
 
-
                         # Dessiner la grille sans les symboles en mouvement
-                        draw_grid(grid, positions, symbols, cell_size, window, selected_pos1, selected_pos2, to_delete)
+                        draw_grid(grid, positions, symbols, cell_size, window, colignes[0], colignes[1], selected_pos1, selected_pos2, to_delete)
 
                         # Calcul des décalages pour centrer le symbole
                         symbol_width1, symbol_height1 = symbols[selected_symbol1].get_size()
@@ -783,7 +914,7 @@ while running:
                         for pos in alignments:
                             if len(pos) == 2:
                                 i, j = pos
-                                pygame.draw.rect(window, color_White, (positions[i][j][0], positions[i][j][1], cell_size, cell_size), 1)
+                                pygame.draw.rect(window, blanc, (positions[i][j][0], positions[i][j][1], cell_size, cell_size), 1)
                         aligner_sound.set_volume(volume_FX)
                         aligner_sound.play()
 
@@ -798,7 +929,8 @@ while running:
                         # Vider la liste alignments
                         alignments = None, None
 
-                        draw_grid(grid, positions, symbols, cell_size, window, selected_pos1, selected_pos2, to_delete)
+                        draw_grid(grid, positions, symbols, cell_size, window, colignes[0], colignes[1], selected_pos1, selected_pos2, to_delete)
+
                         pygame.display.flip()  # Mettre à jour l'affichage pour montrer la surbrillance
 
                         remaining_symbols = count_remaining_symbols(grid)

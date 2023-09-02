@@ -2,16 +2,16 @@
     "config": [
         {
             "level": 1,
-            "objectif": 24,
-            "progression": 1,
-            "meilleurScore": 0,
+            "objectif": 90,
+            "progression": 0,
+            "meilleurScore": 52,
             "obstacles": []
         },
         {
             "level": 2,
-            "objectif": 12,
-            "progression": 1,
-            "meilleurScore": 0,
+            "objectif": 80,
+            "progression": 0,
+            "meilleurScore": 40,
             "obstacles": [
                 {
                     "row": 4,
@@ -25,9 +25,9 @@
         },
         {
             "level": 3,
-            "objectif": 4,
+            "objectif": 80,
             "progression": 0,
-            "meilleurScore": 0,
+            "meilleurScore": 44,
             "obstacles": [
                 {
                     "row": 2,
@@ -45,9 +45,9 @@
         },
         {
             "level": 4,
-            "objectif": 0,
-            "progression": 0,
-            "meilleurScore": 0,
+            "objectif": 80,
+            "progression": 1,
+            "meilleurScore": 28,
             "obstacles": [
                 {
                     "row": 1,
