@@ -11,6 +11,7 @@ ui_texts = {
     "ui_retry" : "Rejouer",
     "ui_next" : "Suivant",
     "ui_score" : "Score",
+    "ui_left" : "Reste",
     "ui_best" : "Meilleur score"
 }
 

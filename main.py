@@ -3,7 +3,20 @@
 ############
 # Author = Gilles Aubin
 # Website = gilles-aubin.net
-# Version = 1.4.0 (langues, orientation horizontale, bug de sélection sur les bords)
+# Version = 1.4.0
+#
+# multi langues
+# orientation horizontale
+# bug de sélection sur les bords
+# affichage des symboles restants
+
+
+
+# Objectifs étranges
+# Bug symboles bords
+# Ecran Fin avec Logo
+# Symboles vectos
+
 
 import sys
 import pygame
@@ -26,8 +39,10 @@ pygame.display.set_caption(game_title)
 game_author = "Gilles Aubin"
 game_url = "https://studiocurieux.itch.io/K-RE-DAS"
 score = 0
-margin = 50  # Espace pour le titre et le score
+window_size = (1280, 720)
+demi_ecran = window_size[0] // 2
 
+# Délai d'affichage du Splash Screen
 delai_screen = 4000
 
 # Polices de caractères
@@ -35,17 +50,31 @@ jetLight = "font/JetBrainsMono-Light.ttf"
 jetBold = "font/JetBrainsMono-Bold.ttf"
 jetExtraBold = "font/JetBrainsMono-ExtraBold.ttf"
 
-window_size = (1280, 720)
-demi_ecran = window_size[0] // 2
-
+# Couleurs
 noir = (0, 0, 0)
 blanc = (204, 204, 204)
 vert = (0, 86, 52)
 
+# Position des scores
 logoKredasX = 10
 logoKredasY = 10
 imageCartesX = 0
 imageCartesY = 500
+
+posTxtBestScoreX = 50
+posTxtBestScoreY = 225
+posBestScoreX = 100
+posBestScoreY = 250
+
+posNivX = 275
+posNivY = 225
+posScoreX = 290
+posScoreY = 250
+
+posTxtResteX = 445
+posTxtResteY = 225
+posResteX = 460
+posResteY = 250
 
 
 ##############################
@@ -358,14 +387,6 @@ def load_next_level():
                     reset_game()
                     waiting_for_input = False
 
-# Fonction pour compter les symboles restants
-def count_remaining_symbols(grid):
-    count = 0
-    for row in grid:
-        for cell in row:
-            if cell in symbols.keys():  # Vérifier si la cellule contient un symbole
-                count += 1
-    return count
 
 #########
 # SCORE #
@@ -383,6 +404,7 @@ def get_high_score():
 # Charger la variable score avec celui contenu dans le fichier
 high_score = get_high_score()
 
+
 # MISE A JOUR DU HIGH_SCORE > OK
 def update_high_score():
     global high_score, score, config_data
@@ -397,10 +419,11 @@ def update_high_score():
 # REINITIALISER > OK
 def reset_game():
     global config_data, grid, score
-    grid = initialize_grid(*colignes)
+    grid = initialize_grid(colignes[0], colignes[1])
     score = 0
     print(f"RESET GAME\n>>> {score}")
     return grid, score
+
 
 # SAUVEGARDE PROGRESSION
 def save_progress(config_data):
@@ -416,6 +439,34 @@ def save_progress(config_data):
 
     save_config_data(config_data)
     print(f"SAVE PROGRESS\n>>> progression : {current_progress}")
+
+
+# Fonction pour compter les symboles restants
+def count_remaining_symbols(grid):
+    count = 0
+    for row in grid:
+        for cell in row:
+            if cell in symbols.keys():  # Vérifier si la cellule contient un symbole
+                count += 1
+                print(f"Reste : {count}")
+    return count
+
+# COMPTE A REBOURS
+# Calculer le nombre initial de symboles
+initial_symbols = (colignes[0] * colignes[1]) - len(current_level['obstacles'])
+
+# Combien de symboles avant la fin du niveau
+def show_progression():
+    remaining_symbols = count_remaining_symbols(grid)
+    progression = initial_symbols - remaining_symbols
+    remaining_to_goal = current_level['objectif'] - progression  # Calcul du nombre de symboles restant à supprimer pour atteindre l'objectif
+
+    ecrire("ui_left", 20, jetBold, blanc, posTxtResteX, posTxtResteY, align="left",ecran="ui")
+
+    font = pygame.font.Font(jetBold, 32)
+    # progression_text = font.render(f"{remaining_to_goal}/{current_level['objectif']}", True, blanc)
+    progression_text = font.render(f"{remaining_to_goal}", True, blanc)
+    window.blit(progression_text, (posResteX, posResteY))
 
 
 #########################
@@ -443,7 +494,7 @@ def initialize_grid(*colignes):
         grid.append(row)
     return grid
 
-grid = initialize_grid(10,10)
+grid = initialize_grid(*colignes)
 
 # Créer une grille vide pour les positions des symboles
 positions = []
@@ -670,6 +721,28 @@ def poseDecor():
     place_image(image_cartes, imageCartesX, imageCartesY)
     place_image(contour_table, pos_contourX, pos_contourY)
 
+def poseUI():
+    # Niveau
+    fontLevel = pygame.font.Font("font/JetBrainsMono-Bold.ttf", 20)
+    textLevel = fontLevel.render(f"{ui_texts['ui_level']} {levelToPlay:02}", True, blanc)
+    window.blit(textLevel, (posNivX, posNivY))  # Vous pouvez ajuster la position selon vos besoins
+
+    # Score le plus élevé
+    ecrire("ui_best", 20, jetBold, blanc, posTxtBestScoreX, posTxtBestScoreY, align="left",ecran="ui")
+    fontHighScore = pygame.font.Font("font/JetBrainsMono-Bold.ttf", 32)
+    textHighScore = fontHighScore.render(f"{high_score:04}", True, blanc)
+    window.blit(textHighScore, (posBestScoreX, posBestScoreY))
+    draw_button("BTN_HS", 32, text_button=None)
+
+    # Score
+    fontScore = pygame.font.Font("font/JetBrainsMono-Bold.ttf", 32)
+    textScore = fontScore.render(f"{score:04}", True, blanc)
+    window.blit(textScore, (posScoreX, posScoreY))
+
+    draw_button("BTN_NEW", 20, "ui_new")
+    draw_button("BTN_HELP", 20, "ui_help")
+    draw_button("BTN_QUIT", 20, "ui_quit")
+
 
 ####################
 # LANCEMENT DU JEU #
@@ -693,6 +766,8 @@ selected_pos2 = None
 running = True
 showing_help = False
 showing_endgame = False
+
+symboles_suppr = 0
 
 while running:
     mouse_pos = pygame.mouse.get_pos()
@@ -741,32 +816,8 @@ while running:
 
         continue  # Continue à la prochaine itération de la boucle, en sautant le reste du code
 
-
-# >>>>>> INTERFACE
-
-    # ecrire(game_title, 36, jetExtraBold, blanc, demi_ecran /2 - (logo_kredas.get_width() /2), 110) # Titre
-
-    # Niveau
-    fontLevel = pygame.font.Font("font/JetBrainsMono-Bold.ttf", 24)
-    textLevel = fontLevel.render(f"{ui_texts['ui_level']} : {levelToPlay:02}", True, blanc)
-    window.blit(textLevel, (margeHRZ+(logoKRDLarg/2) - (textLevel.get_width()/2), 200))  # Vous pouvez ajuster la position selon vos besoins
-
-    # Score le plus élevé
-    fontHighScore = pygame.font.Font("font/JetBrainsMono-Bold.ttf", 32)
-    textHighScore = fontHighScore.render(f"{high_score:04}", True, blanc)
-    window.blit(textHighScore, (margeHRZ+(logoKRDLarg/2) - (textLevel.get_width()/2), 250))
-    draw_button("BTN_HS", 32, text_button=None)
-    # high_score_BTN = pygame.draw.rect(window, blanc, (textHighScore_X - 10,textHighScore_Y,200,40), 2)
-
-    # Score
-    fontScore = pygame.font.Font("font/JetBrainsMono-Bold.ttf", 32)
-    textScore = fontScore.render(f"{score:04}", True, blanc)
-    window.blit(textScore, (margeHRZ+(logoKRDLarg/2) - (textLevel.get_width()/2), 300))
-
-
-    draw_button("BTN_NEW", 20, "ui_new")
-    draw_button("BTN_HELP", 20, "ui_help")
-    draw_button("BTN_QUIT", 20, "ui_quit")
+    poseUI()
+    show_progression()
 
     to_delete = []
 
@@ -798,6 +849,7 @@ while running:
             # Gestion des clics sur l'écran de jeu principal
             if click_on_button("BTN_NEW"):
                 high_score = update_high_score()
+                symboles_suppr = 0
                 reset_game()
 
             elif click_on_button("BTN_QUIT"):
@@ -842,21 +894,9 @@ while running:
                         # 1. Effacer l'écran
                         window.blit(fond_pc, (0, 0))
 
-                        # Redessiner tous les éléments de l'UI
-                        # window.blit(textTitle, (70,10))
-                        ecrire(game_title, 36, jetExtraBold, blanc, 70, 10)
-
-                        # window.blit(textAuthor, (70,50))
-                        ecrire(game_author, 12, jetLight, blanc, 70, 50)
-
-                        window.blit(textHighScore, (textHighScore_X,textHighScore_Y))
-                        pygame.draw.rect(window, blanc, (textHighScore_X - 10,textHighScore_Y,100,40), 2)
-                        window.blit(textScore, (450,15))
-                        window.blit(textLevel, (450, 5))
-
-                        draw_button("BTN_NEW", 20, "ui_new")
-                        draw_button("BTN_HELP", 20, "ui_help")
-                        draw_button("BTN_QUIT", 20, "ui_quit")
+                        poseDecor()
+                        poseUI()
+                        show_progression()
 
                         # 2. Dessiner les éléments
                         factor = _ / vitessEchange
@@ -910,11 +950,16 @@ while running:
                     alignments = check_alignments(grid)
                     if alignments:  # Si la liste n'est pas vide
 
+                        num_deleted = 0
+
                         # Mettre en surbrillance les symboles à supprimer
                         for pos in alignments:
                             if len(pos) == 2:
                                 i, j = pos
                                 pygame.draw.rect(window, blanc, (positions[i][j][0], positions[i][j][1], cell_size, cell_size), 1)
+                                if grid[i][j] is not None:
+                                    num_deleted += 1
+
                         aligner_sound.set_volume(volume_FX)
                         aligner_sound.play()
 
@@ -926,6 +971,9 @@ while running:
                             if len(pos) == 2:
                                 i, j = pos
                                 grid[i][j] = None
+
+                        symboles_suppr += num_deleted
+
                         # Vider la liste alignments
                         alignments = None, None
 
@@ -934,7 +982,7 @@ while running:
                         pygame.display.flip()  # Mettre à jour l'affichage pour montrer la surbrillance
 
                         remaining_symbols = count_remaining_symbols(grid)
-                        if remaining_symbols <= current_objectif:
+                        if symboles_suppr >= current_objectif:
                             # Gérer la fin de jeu ici (par exemple, passer au niveau suivant)
                             print("FIN DU NIVEAU !")
                             save_progress(config_data)
