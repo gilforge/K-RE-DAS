@@ -11,18 +11,18 @@ ui_texts = {
     "ui_retry" : "Retry",
     "ui_next" : "Next",
     "ui_score" : "Score",
-    "ui_left" : "Left",
+    "ui_left" : "Goal",
     "ui_best" : "Best score"
 }
 
 help_texts = {
     "help_how":"How to play?",
-    "help_rule1line1": "Swapping",
-    "help_rule1line2": "2 ACES",
-    "help_rule2line1": "Create an alignment",
-    "help_rule2line2": "of at least 4 aces",
+    "help_rule1line1": "Swapping 2 ACES",
+    "help_rule1line2": "to create a line-up",
+    "help_rule2line1": "of at least 4 identical aces",
+    "help_rule2line2": "Eliminate the symbols to reach the goal",
     "help_rule3line1": "Empty slots or",
-    "help_rule3line2": "are no longer usable"
+    "help_rule3line2": "are not usable"
 }
 
 end_texts = {

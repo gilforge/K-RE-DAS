@@ -11,11 +11,14 @@
 # affichage des symboles restants
 
 
+#tu bosses sur initial_symbols
+
 
 # Objectifs étranges
 # Bug symboles bords
 # Ecran Fin avec Logo
 # Symboles vectos
+# Délai avant recap
 
 
 import sys
@@ -340,13 +343,14 @@ current_progress = current_level['progression']
 current_meilleurScore = current_level['meilleurScore']
 current_obstacles = current_level['obstacles']
 
-
 def save_config_data(config_data):
     with open('config/config.json', 'w') as file:
         json.dump(config_data, file, indent=4)
 
+
+# Vérifier les alignements après le mouvement
 def load_next_level():
-    global levelToPlay, current_level, current_objectif, current_meilleurScore, high_score
+    global levelToPlay, current_level, current_objectif, current_meilleurScore, high_score, symboles_suppr  # Ajoutez symboles_suppr ici
 
     draw_recap_screen()
 
@@ -358,20 +362,16 @@ def load_next_level():
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if click_on_button("BTN_RETRY"):
                     reset_game()
-                    print("CLICK RETRY > after reset")
                     waiting_for_input = False
+
                 elif click_on_button("BTN_NEXT"):
-                    print(f"LevelToPlay {levelToPlay}")
+                    
                     if levelToPlay < len(config_data['config']):
                         levelToPlay += 1
-                        # update_progression(levelToPlay)
                         save_progress(config_data)
-                        print(f"CLICK NEXT {mouse_pos}")
                     else:
-                        # Si c'est le dernier niveau, affichez l'écran de fin de jeu
                         save_progress(config_data)
                         show_endgame_screen()
-                        # Ajoutez une boucle pour maintenir l'écran de fin de jeu à l'affichage
                         while True:
                             for event in pygame.event.get():
                                 if event.type == pygame.MOUSEBUTTONUP:
@@ -384,6 +384,10 @@ def load_next_level():
                     current_objectif = current_level['objectif']
                     current_meilleurScore = current_level['meilleurScore']
                     high_score = current_meilleurScore
+
+                    symboles_suppr = 0  # Réinitialisez la variable ici
+                    initial_symbols = 0
+
                     reset_game()
                     waiting_for_input = False
 
@@ -395,9 +399,6 @@ def load_next_level():
 # Lecture du meilleur score du niveau
 def get_high_score():
     global config_data
-    # Récupérer le meilleur score du niveau actuel
-    print(f"GET HIGHSCORE\n>>> meilleurScore : {current_meilleurScore}")
-
     return current_level['meilleurScore']
 
 
@@ -405,10 +406,10 @@ def get_high_score():
 high_score = get_high_score()
 
 
-# MISE A JOUR DU HIGH_SCORE > OK
+# MISE A JOUR DU HIGH_SCORE
 def update_high_score():
     global high_score, score, config_data
-    print(f"UPDATE HIGHSCORE\n>>> meilleurScore : {current_meilleurScore}")
+    # print(f"UPDATE HIGHSCORE\n>>> meilleurScore : {current_meilleurScore}")
     if score > current_level['meilleurScore']:
         current_level['meilleurScore'] = score
         save_config_data(config_data)
@@ -416,29 +417,33 @@ def update_high_score():
     return current_level['meilleurScore']
 
 
-# REINITIALISER > OK
+# REINITIALISER
 def reset_game():
-    global config_data, grid, score
+    global config_data, grid, score, symboles_suppr
     grid = initialize_grid(colignes[0], colignes[1])
     score = 0
-    print(f"RESET GAME\n>>> {score}")
+    symboles_suppr = 0
+    print(f"RESET GAME, symboles_suppr = >>> {symboles_suppr}")
     return grid, score
 
 
 # SAUVEGARDE PROGRESSION
 def save_progress(config_data):
-    # Réinitialiser la progression pour tous les niveaux
-    for level in config_data['config']:
-        level['progression'] = 0
+    global symboles_suppr
 
-    # Si le joueur a terminé tous les niveaux, définissez la progression du premier niveau sur 1
+    for level in config_data['config']:
+        print(f"current_obj : {current_objectif} \n symboles_suppr : {symboles_suppr} | ")
+        level['progression'] = 0
+        symboles_suppr = 0
+
+    # Si terminé tous les niveaux, progression du premier niveau sur 1
     if levelToPlay == 1:
         config_data['config'][0]['progression'] = 1
     else:
         config_data['config'][levelToPlay-1]['progression'] = 1
 
     save_config_data(config_data)
-    print(f"SAVE PROGRESS\n>>> progression : {current_progress}")
+    # print(f"SAVE PROGRESS >>> progression : {current_progress}")
 
 
 # Fonction pour compter les symboles restants
@@ -448,25 +453,25 @@ def count_remaining_symbols(grid):
         for cell in row:
             if cell in symbols.keys():  # Vérifier si la cellule contient un symbole
                 count += 1
-                print(f"Reste : {count}")
     return count
 
-# COMPTE A REBOURS
+
 # Calculer le nombre initial de symboles
 initial_symbols = (colignes[0] * colignes[1]) - len(current_level['obstacles'])
 
+
 # Combien de symboles avant la fin du niveau
-def show_progression():
+def show_remaining():
     remaining_symbols = count_remaining_symbols(grid)
-    progression = initial_symbols - remaining_symbols
-    remaining_to_goal = current_level['objectif'] - progression  # Calcul du nombre de symboles restant à supprimer pour atteindre l'objectif
+    toGoal = initial_symbols - remaining_symbols
+    remaining_to_goal = current_level['objectif'] - toGoal  # Calcul du nombre de symboles restant à supprimer pour atteindre l'objectif
 
     ecrire("ui_left", 20, jetBold, blanc, posTxtResteX, posTxtResteY, align="left",ecran="ui")
 
     font = pygame.font.Font(jetBold, 32)
-    # progression_text = font.render(f"{remaining_to_goal}/{current_level['objectif']}", True, blanc)
-    progression_text = font.render(f"{remaining_to_goal}", True, blanc)
-    window.blit(progression_text, (posResteX, posResteY))
+    toGoal_text = font.render(f"{remaining_to_goal}/{current_level['objectif']}", True, blanc)
+    # toGoal_text = font.render(f"{remaining_to_goal}", True, blanc)
+    window.blit(toGoal_text, (posResteX, posResteY))
 
 
 #########################
@@ -511,10 +516,14 @@ for i in range(colignes[0]):
 ###############
 
 def check_alignments(grid):
-    to_delete = []
     global score
+
+    to_delete_for_objectif = set()  # Pour l'objectif
+    to_delete_for_score = []  # Pour le score
+
     for i in range(colignes[0]):
         for j in range(colignes[1]):
+
             # Vérifier l'alignement horizontal
             if j <= colignes[0] - 4:
                 k = 0
@@ -522,7 +531,8 @@ def check_alignments(grid):
                     k += 1
                 if k >= 3:
                     for l in range(k+1):
-                        to_delete.append((i, j + l))
+                        to_delete_for_objectif.add((i, j + l))
+                        to_delete_for_score.append((i, j + l))
                     score += 4  # Ajouter 4 points pour chaque alignement
             # Vérifier l'alignement vertical
             if i <= colignes[1] - 4:
@@ -531,9 +541,11 @@ def check_alignments(grid):
                     k += 1
                 if k >= 3:
                     for l in range(k+1):
-                        to_delete.append((i + l, j))
+                        to_delete_for_objectif.add((i + l, j))
+                        to_delete_for_score.append((i + l, j))
                     score += 4  # Ajouter 4 points pour chaque alignement
-    return to_delete
+
+    return list(to_delete_for_objectif), to_delete_for_score
 
 # Fonction d'animation des échanges de symboles
 def lerp(start, end, factor):
@@ -649,13 +661,14 @@ def show_help_screen():
     place_image(logo_kredas, logoKredasX, 120, position="center")
     ecrire("help_rule1line1", 22, jetBold, blanc, 50, 270, align="center", ecran="help")
     ecrire("help_rule1line2", 22, jetBold, blanc, 50, 300, align="center", ecran="help")
-    ecrire("help_rule2line1", 22, jetBold, blanc, 50, 370, align="center", ecran="help")
+    ecrire("help_rule2line1", 22, jetBold, blanc, 50, 330, align="center", ecran="help")
     ecrire("help_rule2line2", 22, jetBold, blanc, 50, 400, align="center", ecran="help")
     ecrire("help_rule3line1", 22, jetBold, blanc, 50, 470, align="center", ecran="help")
     ecrire("help_rule3line2", 22, jetBold, blanc, 50, 500, align="center", ecran="help")
 
     draw_button("BTN_CLOSE", 20, "ui_close")
     place_image(image_cartes, imageCartesX, imageCartesY)
+    place_image(obstacle_image, 820, 465)
 
     pygame.display.flip()
 
@@ -817,12 +830,11 @@ while running:
         continue  # Continue à la prochaine itération de la boucle, en sautant le reste du code
 
     poseUI()
-    show_progression()
+    show_remaining()
 
     to_delete = []
 
     draw_grid(grid, positions, symbols, cell_size, window, colignes[0], colignes[1], selected_pos1, selected_pos2, to_delete)
-
     # Mettre à jour l'affichage
     pygame.display.flip()
 
@@ -832,19 +844,15 @@ while running:
             running = False
 
         elif event.type == pygame.MOUSEBUTTONUP:
-            # mouse_pos = pygame.mouse.get_pos()
-
             if showing_help:
-                # Gestion des clics sur l'écran d'aide
                 if click_on_button("BTN_CLOSE"):
                     showing_help = False
-                continue  # Continue à la prochaine itération pour éviter de traiter d'autres clics
+                continue
 
             if showing_endgame:
-                # Gestion des clics sur l'écran d'aide
                 if click_on_button("BTN_CLOSE"):
                     showing_endgame = False
-                continue  # Continue à la prochaine itération pour éviter de traiter d'autres clics
+                continue
 
             # Gestion des clics sur l'écran de jeu principal
             if click_on_button("BTN_NEW"):
@@ -860,13 +868,13 @@ while running:
                 showing_help = True
                 show_help_screen()
 
-            if buttons["BTN_HS"].collidepoint(mouse_pos):
-                pygame.draw.rect(window, noir, buttons["BTN_HS"])
+            # if buttons["BTN_HS"].collidepoint(mouse_pos):
+            #     pygame.draw.rect(window, noir, buttons["BTN_HS"])
 
-            if click_on_button("BTN_HS"):
-                high_score = 0
-                score = 0
-                update_high_score()
+            # if click_on_button("BTN_HS"):
+            #     high_score = 0
+            #     score = 0
+            #     update_high_score()
 
             cell_x = (mouse_pos[0] - grid_x) // cell_size
             cell_y = (mouse_pos[1] - grid_y) // cell_size
@@ -896,7 +904,7 @@ while running:
 
                         poseDecor()
                         poseUI()
-                        show_progression()
+                        show_remaining()
 
                         # 2. Dessiner les éléments
                         factor = _ / vitessEchange
@@ -946,19 +954,15 @@ while running:
                     selected_symbol2 = None
                     selected_pos2 = None
 
-                    # Vérifier les alignements après le mouvement
-                    alignments = check_alignments(grid)
-                    if alignments:  # Si la liste n'est pas vide
+                    alignments_for_objectif, alignments_for_score = check_alignments(grid)
 
-                        num_deleted = 0
+                    if alignments_for_objectif:  # Si la liste n'est pas vide
 
-                        # Mettre en surbrillance les symboles à supprimer
-                        for pos in alignments:
+                        # Mettre en surbrillance les symboles à supprimer (en utilisant l'un ou l'autre des ensembles)
+                        for pos in alignments_for_objectif:
                             if len(pos) == 2:
                                 i, j = pos
                                 pygame.draw.rect(window, blanc, (positions[i][j][0], positions[i][j][1], cell_size, cell_size), 1)
-                                if grid[i][j] is not None:
-                                    num_deleted += 1
 
                         aligner_sound.set_volume(volume_FX)
                         aligner_sound.play()
@@ -967,27 +971,33 @@ while running:
                         pygame.time.wait(500)  # Attendre 500 millisecondes (0.5 seconde)
 
                         # Supprimer les symboles à supprimer de la grille
-                        for pos in alignments:
-                            if len(pos) == 2:
-                                i, j = pos
-                                grid[i][j] = None
+                        for pos in alignments_for_objectif:
+                            i, j = pos
+                            grid[i][j] = None
 
-                        symboles_suppr += num_deleted
+                        # Mettre à jour le nombre de symboles supprimés pour l'objectif
+                        symboles_suppr += len(alignments_for_objectif)
 
-                        # Vider la liste alignments
-                        alignments = None, None
+                        # Mettre à jour le score (si vous le souhaitez)
+                        score += len(alignments_for_score)
+
+                        # Vider la liste des alignements
+                        alignments_for_objectif = None
+                        alignments_for_score = None
 
                         draw_grid(grid, positions, symbols, cell_size, window, colignes[0], colignes[1], selected_pos1, selected_pos2, to_delete)
 
                         pygame.display.flip()  # Mettre à jour l'affichage pour montrer la surbrillance
 
-                        remaining_symbols = count_remaining_symbols(grid)
+                        # Vérifier si l'objectif a été atteint
                         if symboles_suppr >= current_objectif:
+
                             # Gérer la fin de jeu ici (par exemple, passer au niveau suivant)
                             print("FIN DU NIVEAU !")
                             save_progress(config_data)
                             high_score = update_high_score()
                             load_next_level()
+
 
 high_score = update_high_score()
 
