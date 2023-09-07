@@ -339,7 +339,7 @@ initial_symbols = (colignes[0] * colignes[1]) - len(current_level['obstacles'])
 
 # Vérifier les alignements après le mouvement
 def load_next_level():
-    global levelToPlay, current_level, current_objectif, current_meilleurScore, high_score, symboles_suppr
+    global levelToPlay, current_level, current_objectif, current_meilleurScore, high_score
 
     draw_recap_screen()
 
@@ -348,13 +348,11 @@ def load_next_level():
         for event in pygame.event.get():
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if click_on_button("BTN_RETRY"):
-                    print("RETRY")
                     reset_game()
                     high_score = update_high_score()
                     waiting_for_input = False
 
                 elif click_on_button("BTN_NEXT"):
-                    print("NEXT")
                     if levelToPlay < len(config_data['config']):
                         levelToPlay += 1
                         save_progress(config_data)
@@ -366,7 +364,6 @@ def load_next_level():
                                 if event.type == pygame.MOUSEBUTTONUP:
                                     if click_on_button("BTN_CLOSE"):
                                         levelToPlay = 1
-                                        current_level = config_data['config'][levelToPlay-1]
                                         reset_game()
                                         return
 
@@ -420,17 +417,18 @@ def save_progress(config_data):
     save_config_data(config_data)
 
 
-def count_remaining_symbols(grid):
+def count_remaining_symbols(grid, level_obstacles):
     count = 0
     for row in grid:
         for cell in row:
             if cell in symbols.keys():  # Vérifier si la cellule contient un symbole
                 count += 1
+    count += level_obstacles
     return count
 
 
 def show_remaining():
-    remaining_symbols = count_remaining_symbols(grid)
+    remaining_symbols = count_remaining_symbols(grid, len(current_level['obstacles']))
     toGoal = initial_symbols - remaining_symbols
     remaining_to_goal = current_level['objectif'] - toGoal
 
@@ -445,24 +443,24 @@ def show_remaining():
 # INITIALISER LA GRILLE #
 #########################
 
-def initialize_grid(*colignes):
-    global config_data
+def initialize_grid(rows, columns):
     grid = []
     symbol_counts = {"pique": 0, "carreau": 0, "coeur": 0, "trefle": 0}
-    symbols_list = list(symbols.keys())
-    max_count = (colignes[0] * colignes[1]) // len(symbols_list)
+    symbols_list = list(symbol_counts.keys())
+    max_count = (rows * columns) // len(symbols_list)
 
-    for i in range(colignes[0]):
+    for i in range(rows):
         row = []
-        for j in range(colignes[1]):
+        for j in range(columns):
+            # Check if current position is an obstacle
             if any(obstacle['row'] == i and obstacle['col'] == j for obstacle in current_level['obstacles']):
                 row.append('obstacle')
             else:
-                # Choisir un symbole qui n'a pas encore atteint son maximum
+                # Choose a symbol that hasn't reached its maximum count
                 available_symbols = [symbol for symbol in symbols_list if symbol_counts[symbol] < max_count]
                 chosen_symbol = random.choice(available_symbols)
                 row.append(chosen_symbol)
-                symbol_counts[chosen_symbol] += 1  # Incrémenter le compteur pour le symbole choisi
+                symbol_counts[chosen_symbol] += 1  # Increment the count for the chosen symbol
         grid.append(row)
     return grid
 
@@ -495,33 +493,35 @@ def handle_level_completion():
 def check_alignments(grid):
     global score
 
-    to_delete_for_objectif = set()
-    to_delete_for_score = []
+    cells_to_delete_for_objective = set()
+    cells_to_delete_for_score = []
 
-    for i in range(colignes[0]):
-        for j in range(colignes[1]):
+    rows, cols = len(grid), len(grid[0])
 
-            if j <= colignes[0] - 4:
+    for i in range(rows):
+        for j in range(cols):
+
+            if j <= rows - 4:
                 k = 0
-                while j+k+1 < colignes[0] and grid[i][j] is not None and grid[i][j] == grid[i][j+k+1]:
+                while j + k + 1 < rows and grid[i][j] is not None and grid[i][j] == grid[i][j + k + 1]:
                     k += 1
                 if k >= 3:
-                    for l in range(k+1):
-                        to_delete_for_objectif.add((i, j + l))
-                        to_delete_for_score.append((i, j + l))
+                    for l in range(k + 1):
+                        cells_to_delete_for_objective.add((i, j + l))
+                        cells_to_delete_for_score.append((i, j + l))
                     score += 4
 
-            if i <= colignes[1] - 4:
+            if i <= cols - 4:
                 k = 0
-                while i+k+1 < colignes[1] and grid[i][j] is not None and grid[i][j] == grid[i+k+1][j]:
+                while i + k + 1 < cols and grid[i][j] is not None and grid[i][j] == grid[i + k + 1][j]:
                     k += 1
                 if k >= 3:
-                    for l in range(k+1):
-                        to_delete_for_objectif.add((i + l, j))
-                        to_delete_for_score.append((i + l, j))
+                    for l in range(k + 1):
+                        cells_to_delete_for_objective.add((i + l, j))
+                        cells_to_delete_for_score.append((i + l, j))
                     score += 4
 
-    return list(to_delete_for_objectif), to_delete_for_score
+    return list(cells_to_delete_for_objective), cells_to_delete_for_score
 
 
 # Fonction d'animation des échanges de symboles
@@ -537,10 +537,7 @@ window = pygame.display.set_mode(window_size)
 
 def draw_grid(grid, positions, symbols, cell_size, window, rows, cols, selected_pos1=None, selected_pos2=None, to_delete=None):
     obstacle_size = obstacle_image.get_size()
-    
-    # Convertir to_delete en set pour une recherche plus rapide
     to_delete_set = set(to_delete) if to_delete else set()
-    
     selected_positions = {selected_pos1, selected_pos2}
 
     for i in range(rows):
@@ -557,7 +554,6 @@ def draw_grid(grid, positions, symbols, cell_size, window, rows, cols, selected_
                 symbol_size = symbols[symbol].get_size()
                 centered_pos = (pos[0] + cell_size // 2 - symbol_size[0] // 2, pos[1] + cell_size // 2 - symbol_size[1] // 2)
 
-                # Si le symbole est sélectionné, utilisez la version "_on"
                 if (i, j) in selected_positions:
                     window.blit(symbols_on[symbol], centered_pos)
                 else:
@@ -687,16 +683,16 @@ def poseDecor():
 
 
 def poseUI():
-    fontLevel = pygame.font.Font("font/JetBrainsMono-Bold.ttf", 20)
+    fontLevel = pygame.font.Font(jetBold, 20)
     textLevel = fontLevel.render(f"{ui_texts['ui_level']} {levelToPlay:02}", True, blanc)
     window.blit(textLevel, (posNivX, posNivY))
 
     ecrire("ui_best", 20, jetBold, blanc, posTxtBestScoreX, posTxtBestScoreY, align="left",ecran="ui")
-    fontHighScore = pygame.font.Font("font/JetBrainsMono-Bold.ttf", 32)
+    fontHighScore = pygame.font.Font(jetBold, 32)
     textHighScore = fontHighScore.render(f"{high_score:04}", True, blanc)
     window.blit(textHighScore, (posBestScoreX, posBestScoreY))
 
-    fontScore = pygame.font.Font("font/JetBrainsMono-Bold.ttf", 32)
+    fontScore = pygame.font.Font(jetBold, 32)
     textScore = fontScore.render(f"{score:04}", True, blanc)
     window.blit(textScore, (posScoreX, posScoreY))
 
@@ -731,7 +727,6 @@ showing_help = False
 showing_endgame = False
 
 symboles_suppr = 0
-
 
 #####################
 # BOUCLE PRINCIPALE #
