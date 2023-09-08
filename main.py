@@ -11,8 +11,7 @@
 # affichage des symboles restants
 
 
-# Objectifs étranges
-# Bug symboles bords
+# Position du jeton dans l'écran AIDE
 # Ecran Fin avec Logo
 # Symboles vectos
 # Délai avant recap
@@ -33,7 +32,7 @@ pygame.mixer.init()
 # VARIABLES #
 #############
 
-debug = True #>>>> CHANGE AVANT DE PUBLIER <<<<#
+debug = False #>>>> CHANGE AVANT DE PUBLIER <<<<#
 
 game_title = "K-RE-DAS"
 pygame.display.set_caption(game_title)
@@ -145,6 +144,7 @@ margeHRZ = (window_size[0] - (logoKRDLarg+contourLarg)) / 3
 # LANGUES #
 ###########
 
+language = "fr_FR"
 def load_language(language="fr_FR"):
     global help_texts, ui_texts, end_texts  # Dictionnaires utilisé dans les fichiers de langues
     if language == "en_US":
@@ -158,7 +158,9 @@ def load_language(language="fr_FR"):
     ui_texts = lang_module.ui_texts
     end_texts = lang_module.end_texts
 
-load_language()
+    return language
+
+load_language(language)
 
 
 ########
@@ -265,7 +267,6 @@ buttons = {
 def draw_button(CARAC_BTN, text_size, text_button=None) :
 
     if text_button is not None:
-        # bouton = pygame.draw.rect(window, blanc, buttons[CARAC_BTN], 1)
         bouton = buttons[CARAC_BTN]
         font = pygame.font.Font(jetBold, text_size)
         text = font.render(ui_texts[text_button], True, blanc)
@@ -294,29 +295,33 @@ def click_on_button(CARAC_BTN):
 ###########
 # NIVEAUX #
 ###########
-
-# Lecture des informations du fichier config.json
-def load_config_data() :
-    try :
+def load_config_data():
+    try:
         with open('config/config.json', 'r') as file:
             data = json.load(file)
-            if 'progression' not in data:
-                data['progression'] = 1
+
+            if not any(level.get('progression', 0) == 1 for level in data['config']):
+                data['config'][0]['progression'] = 1
+
             return data
+
     except (FileNotFoundError, json.JSONDecodeError):
         sys.exit()
 
 config_data = load_config_data()
 
-# Trouver le niveau avec une progression de 1
 def load_progress(config_data):
     if config_data:
-        levels_with_progression = [level for level in config_data.get('config', []) if level.get('progression') == 1]
+        levels_with_progression = [
+            level for level in config_data.get('config', []) 
+            if level.get('progression') == 1
+        ]
         if levels_with_progression:
             return levels_with_progression[0]
-        return config_data.get('config', [{}])[0]
-    
-    return {}
+        else:
+            return config_data.get('config', [{}])[0]
+    else:
+        return {}
 
 # Chargement des données de progression
 current_level = load_progress(config_data)
@@ -333,8 +338,8 @@ def save_config_data(config_data):
 
 
 # Calculer le nombre initial de symboles
-# initial_symbols = (colignes[0] * colignes[1])
-initial_symbols = (colignes[0] * colignes[1]) - len(current_level['obstacles'])
+initial_symbols = (colignes[0] * colignes[1])
+# initial_symbols = (colignes[0] * colignes[1]) - len(current_level['obstacles'])
 
 
 # Vérifier les alignements après le mouvement
@@ -368,7 +373,7 @@ def load_next_level():
                                         return
 
                     current_level = config_data['config'][levelToPlay-1]
-                    current_objectif = current_level['objectif']
+                    current_objectif = current_level['objectif'] - len(current_level['obstacles'])
                     current_meilleurScore = current_level['meilleurScore']
                     high_score = current_meilleurScore
                     reset_game()
@@ -446,6 +451,7 @@ def show_remaining():
 def initialize_grid(rows, columns):
     grid = []
     symbol_counts = {"pique": 0, "carreau": 0, "coeur": 0, "trefle": 0}
+    remaining_symbols = {"pique": 0, "carreau": 0, "coeur": 0, "trefle": 0}
     symbols_list = list(symbol_counts.keys())
     max_count = (rows * columns) // len(symbols_list)
 
@@ -565,25 +571,9 @@ def draw_grid(grid, positions, symbols, cell_size, window, rows, cols, selected_
 ##########
 
 def show_language_screen():
-    global jetBold
-
-    window.blit(fond_pc, (0,0))
-
-    flagEN_posX = buttons["BTN_EN"].x
-    flagEN_posY = buttons["BTN_EN"].y
-    flagFR_posX = buttons["BTN_FR"].x
-    flagFR_posY = buttons["BTN_FR"].y
-
-    place_image(flag_en, flagEN_posX, flagEN_posY)
-    place_image(flag_fr, flagFR_posX, flagFR_posY)
-
-    if click_on_button("BTN_EN"):
-        load_language("en_US")
-
-    elif click_on_button("BTN_FR"):
-        load_language("fr_FR")
-
-    # place_image(image_cartes, imageCartesX, imageCartesY)
+    window.blit(fond_pc, (0, 0))
+    place_image(flag_en, buttons["BTN_EN"].x, buttons["BTN_EN"].y)
+    place_image(flag_fr, buttons["BTN_FR"].x, buttons["BTN_FR"].y)
 
     pygame.display.flip()
 
@@ -599,7 +589,6 @@ def show_language_screen():
                     load_language("fr_FR")
                     waiting_for_input = False
 
-
 def show_splashscreen():
     window.blit(fond_pc, (0, 0))
     place_image(logo_studio, 50, 50, position="center")
@@ -612,9 +601,7 @@ def show_splashscreen():
 
 
 def show_help_screen():
-    global jetBold
-
-    window.blit(fond_pc, (0,0))
+    window.blit(fond_pc, (0, 0))
 
     ecrire("help_how", 24, jetBold, blanc, 100, 80, align="center", ecran="help")
     place_image(logo_kredas, logoKredasX, 120, position="center")
@@ -627,7 +614,12 @@ def show_help_screen():
 
     draw_button("BTN_CLOSE", 20, "ui_close")
     place_image(image_cartes, imageCartesX, imageCartesY)
-    place_image(obstacle_image, 820, 465)
+
+    print(f"SHS > language = {language}\n")
+    if language == "en_US":
+        place_image(obstacle_image, 750, 465)
+    elif language == "fr_FR":
+        place_image(obstacle_image, 820, 475)
 
     pygame.display.flip()
 
@@ -874,7 +866,9 @@ while running:
 
 
     elif current_state == GameState.HELP:
+        print(f"AV > language = {language}\n")
         show_help_screen()
+        print(f"AP > language = {language}\n")
         pygame.display.flip()
 
         for event in pygame.event.get():

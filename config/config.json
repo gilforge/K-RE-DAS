@@ -2,16 +2,16 @@
     "config": [
         {
             "level": 1,
-            "objectif": 30,
-            "progression": 1,
-            "meilleurScore": 0,
+            "objectif": 90,
+            "progression": 0,
+            "meilleurScore": 312,
             "obstacles": []
         },
         {
             "level": 2,
-            "objectif": 12,
-            "progression": 0,
-            "meilleurScore": 0,
+            "objectif": 30,
+            "progression": 1,
+            "meilleurScore": 116,
             "obstacles": [
                 {
                     "row": 2,
@@ -25,7 +25,7 @@
         },
         {
             "level": 3,
-            "objectif": 35,
+            "objectif": 30,
             "progression": 0,
             "meilleurScore": 0,
             "obstacles": [
@@ -295,6 +295,5 @@
                 }
             ]
         }
-    ],
-    "progression": 1
+    ]
 }
