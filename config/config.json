@@ -3,15 +3,15 @@
         {
             "level": 1,
             "objectif": 90,
-            "progression": 0,
-            "meilleurScore": 312,
+            "progression": 1,
+            "meilleurScore": 0,
             "obstacles": []
         },
         {
             "level": 2,
             "objectif": 30,
-            "progression": 1,
-            "meilleurScore": 116,
+            "progression": 0,
+            "meilleurScore": 0,
             "obstacles": [
                 {
                     "row": 2,

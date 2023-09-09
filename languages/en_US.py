@@ -12,10 +12,11 @@ ui_texts = {
     "ui_next" : "Next",
     "ui_score" : "Score",
     "ui_left" : "Goal",
-    "ui_best" : "Best score"
+    "ui_best" : "Best score",
 }
 
 help_texts = {
+    "help_lang" : "US",
     "help_how":"How to play?",
     "help_rule1line1": "Swapping 2 ACES",
     "help_rule1line2": "to create a line-up",

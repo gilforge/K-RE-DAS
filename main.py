@@ -9,11 +9,9 @@
 # orientation horizontale
 # bug de sélection sur les bords
 # affichage des symboles restants
+# combos
+# coupure son
 
-
-# Position du jeton dans l'écran AIDE
-# Ecran Fin avec Logo
-# Symboles vectos
 # Délai avant recap
 
 
@@ -21,6 +19,8 @@ import sys
 import pygame
 import random
 import json
+import math
+import webbrowser
 
 from enum import Enum
 
@@ -32,7 +32,7 @@ pygame.mixer.init()
 # VARIABLES #
 #############
 
-debug = False #>>>> CHANGE AVANT DE PUBLIER <<<<#
+debug = True #>>>> CHANGE AVANT DE PUBLIER <<<<#
 
 game_title = "K-RE-DAS"
 pygame.display.set_caption(game_title)
@@ -78,6 +78,9 @@ posTxtResteY = 225
 posResteX = 460
 posResteY = 250
 
+posOverlayX = 900
+posOverlayY = 360
+
 
 ##############################
 # CONFIGURATION DE LA GRILLE #
@@ -108,19 +111,21 @@ def load_image(filename):
     except pygame.error:
         sys.exit()
 
-splash_image = load_image('img/splash_windows.jpg')
 game_image = load_image('img/tapis.jpg')
 logo_studio = load_image('img/logo_studiocurieux.png')
 logo_kredas = load_image('img/logo_kredas.png')
 image_cartes = load_image('img/4as.png')
 flag_en = load_image('img/flag_en.png')
 flag_fr = load_image('img/flag_fr.png')
-help_image = load_image('img/aide.jpg')
-endgame_image = load_image('img/findejeu.jpg')
 obstacle_image = load_image('img/obstacle.png')
-fond_mobile = load_image('img/fond_mobile.jpg')
 fond_pc = load_image('img/fond_pc.jpg')
 contour_table = load_image('img/contour_table.png')
+soundControlON = load_image('img/sound-max.png')
+soundControlOFF = load_image('img/sound-mute.png')
+
+overlay_S = load_image('img/S-Combo.png')
+overlay_M = load_image('img/M-Master.png')
+overlay_XL = load_image('img/XL-Awesome.png')
 
 symbols = {
     "pique": load_image('img/pique.png'),
@@ -144,7 +149,6 @@ margeHRZ = (window_size[0] - (logoKRDLarg+contourLarg)) / 3
 # LANGUES #
 ###########
 
-language = "fr_FR"
 def load_language(language="fr_FR"):
     global help_texts, ui_texts, end_texts  # Dictionnaires utilisé dans les fichiers de langues
     if language == "en_US":
@@ -160,13 +164,14 @@ def load_language(language="fr_FR"):
 
     return language
 
-load_language(language)
+load_language()
 
 
 ########
 # SONS #
 ########
 
+soundState = True
 volume_FX = 0.5
 volume_ambiance = 0.5
 
@@ -193,7 +198,6 @@ pygame.mixer.music.set_volume(volume_ambiance)
 #############
 
 # >>>>>> MODE DEBUG
-
 def modeDebug():
     if debug:
         mouse_x = mouse_pos[0]
@@ -213,7 +217,6 @@ def modeDebug():
         pygame.draw.line(window, blanc, (mouse_x, mouse_y - reticule_size), (mouse_x, mouse_y + reticule_size), 2)
 
         pygame.display.flip()
-
 
 def ecrire(champ_texte, taille_texte, police, couleur, posX, posY, align="left", ecran="ui"):
     font = pygame.font.Font(police, taille_texte)
@@ -244,7 +247,6 @@ def place_image(nom_image, posX, posY, position="left"):
     window.blit(nom_image, (posX, posY))
 
 # >>>>>> GENERATEUR DE BOUTON
-
 BTNlarg = 150
 BTNhaut = 40
 BTNcentre = (margeHRZ + logoKRDLarg/2) - BTNlarg/2
@@ -255,7 +257,7 @@ textHighScore_Y = 300
 buttons = {
     'BTN_EN': pygame.Rect(425, 360, 48, 34),
     'BTN_FR': pygame.Rect(850, 360, 48, 34),
-    'BTN_SOUND': pygame.Rect(300, 300, 200, 40),
+    'BTN_SOUND': pygame.Rect(150, 350, 34, 34),
     'BTN_NEW': pygame.Rect(BTNcentre, 350, BTNlarg, BTNhaut),
     'BTN_HELP': pygame.Rect(BTNcentre, 400, BTNlarg, BTNhaut),
     'BTN_QUIT': pygame.Rect(BTNcentre, 450, BTNlarg, BTNhaut),
@@ -265,7 +267,6 @@ buttons = {
 }
 
 def draw_button(CARAC_BTN, text_size, text_button=None) :
-
     if text_button is not None:
         bouton = buttons[CARAC_BTN]
         font = pygame.font.Font(jetBold, text_size)
@@ -283,7 +284,6 @@ def draw_button(CARAC_BTN, text_size, text_button=None) :
 
         pygame.draw.rect(window, blanc, buttons[CARAC_BTN], 1)
 
-
 def click_on_button(CARAC_BTN):
     mouse_pos = pygame.mouse.get_pos()
     if CARAC_BTN in buttons:
@@ -291,13 +291,62 @@ def click_on_button(CARAC_BTN):
             return True
         return False
 
+# Animation des combos
+def animate_overlay(overlay_image):
+    frames = 5  # nombre de frames entre deux images clés
+    delay = 5  # durée de chaque frame en ms (500 ms = 15 frames * 33 ms)
+
+    # image clé 1 > image clé 2
+    for i in range(frames + 1):
+        factor = i / frames
+        scale_factor = 0.2 + 0.8 * factor
+        alpha = int(255 * factor)
+
+        animate_frame(overlay_image, scale_factor, alpha)
+        pygame.time.wait(delay)
+
+    # Pause image clé 2 de 500 ms
+    animate_frame(overlay_image, 1, 255)
+    pygame.time.wait(500)
+
+    # image clé 2 > image clé 3
+    for i in range(frames, -1, -1):
+        factor = i / frames
+        scale_factor = 0.2 + 0.8 * factor
+        alpha = int(255 * factor)
+
+        animate_frame(overlay_image, scale_factor, alpha)
+        pygame.time.wait(delay)
+
+def animate_frame(overlay_image, scale_factor, alpha):
+    width, height = overlay_image.get_size()
+    scaled_image = pygame.transform.scale(overlay_image, (int(width * scale_factor), int(height * scale_factor)))
+    scaled_image.set_alpha(alpha)
+
+    x = posOverlayX - scaled_image.get_width() // 2
+    y = posOverlayY - scaled_image.get_height() // 2
+
+    window.blit(fond_pc, (0, 0))
+    poseDecor()
+    poseUI()
+    show_remaining()
+    draw_grid(grid, positions, symbols, cell_size, window, colignes[0], colignes[1], selected_pos1, selected_pos2, to_delete)
+    window.blit(scaled_image, (x, y))
+    pygame.display.flip()
+
 
 ###########
 # NIVEAUX #
 ###########
-def load_config_data():
+
+if modeDebug:
+    ConfigJSON = "config_debug.json"
+else:
+    ConfigJSON = "config.json"
+
+def load_config_data():     
     try:
-        with open('config/config.json', 'r') as file:
+        with open('config/' + ConfigJSON, 'r') as file:
             data = json.load(file)
 
             if not any(level.get('progression', 0) == 1 for level in data['config']):
@@ -333,16 +382,13 @@ current_meilleurScore = current_level['meilleurScore']
 current_obstacles = current_level['obstacles']
 
 def save_config_data(config_data):
-    with open('config/config.json', 'w') as file:
+    with open('config/' + ConfigJSON, 'w') as file:
         json.dump(config_data, file, indent=4)
 
 
 # Calculer le nombre initial de symboles
 initial_symbols = (colignes[0] * colignes[1])
-# initial_symbols = (colignes[0] * colignes[1]) - len(current_level['obstacles'])
 
-
-# Vérifier les alignements après le mouvement
 def load_next_level():
     global levelToPlay, current_level, current_objectif, current_meilleurScore, high_score
 
@@ -390,7 +436,6 @@ def get_high_score():
 
 high_score = get_high_score()
 
-
 def update_high_score():
     global high_score, score, config_data
 
@@ -400,7 +445,6 @@ def update_high_score():
 
     return current_level['meilleurScore']
 
-
 def reset_game():
     global config_data, grid, score, symboles_suppr
     grid = initialize_grid(colignes[0], colignes[1])
@@ -408,9 +452,7 @@ def reset_game():
     symboles_suppr = 0
     return grid, score
 
-
 def save_progress(config_data):
-
     for level in config_data['config']:
         level['progression'] = 0
 
@@ -421,7 +463,6 @@ def save_progress(config_data):
 
     save_config_data(config_data)
 
-
 def count_remaining_symbols(grid, level_obstacles):
     count = 0
     for row in grid:
@@ -430,7 +471,6 @@ def count_remaining_symbols(grid, level_obstacles):
                 count += 1
     count += level_obstacles
     return count
-
 
 def show_remaining():
     remaining_symbols = count_remaining_symbols(grid, len(current_level['obstacles']))
@@ -480,15 +520,14 @@ for i in range(colignes[0]):
         row.append((grid_x + j * cell_size, grid_y + i * cell_size))
     positions.append(row)
 
-
 def update_game_state():
     save_progress(config_data)
     update_high_score()
 
-
 def handle_level_completion():
     save_progress(config_data)
     update_high_score()
+    # pygame.time.delay(1000)
     load_next_level()
 
 
@@ -528,7 +567,6 @@ def check_alignments(grid):
                     score += 4
 
     return list(cells_to_delete_for_objective), cells_to_delete_for_score
-
 
 # Fonction d'animation des échanges de symboles
 def lerp(start, end, factor):
@@ -599,7 +637,6 @@ def show_splashscreen():
     pygame.display.flip()
     pygame.time.wait(delai_screen)
 
-
 def show_help_screen():
     window.blit(fond_pc, (0, 0))
 
@@ -615,14 +652,12 @@ def show_help_screen():
     draw_button("BTN_CLOSE", 20, "ui_close")
     place_image(image_cartes, imageCartesX, imageCartesY)
 
-    print(f"SHS > language = {language}\n")
-    if language == "en_US":
+    if help_texts["help_lang"] == "US":
         place_image(obstacle_image, 750, 465)
-    elif language == "fr_FR":
+    elif  help_texts["help_lang"] == "FR":
         place_image(obstacle_image, 820, 475)
 
     pygame.display.flip()
-
 
 def draw_recap_screen():
 
@@ -645,26 +680,21 @@ def draw_recap_screen():
 
     pygame.display.flip()
 
-
 def show_endgame_screen():
     global jetBold
 
-    # window.fill((vert))
     window.blit(fond_pc, (0, 0))
 
-    ecrire("end_well", 70, jetBold, blanc, 50, 150, align="center",ecran="end")
-    ecrire("end_completed", 22, jetBold, blanc, 50, 230, align="center",ecran="end")
-    ecrire("end_work", 22, jetBold, blanc, 50, 300, align="center",ecran="end")
-    ecrire("end_share", 22, jetBold, blanc, 50, 330, align="center",ecran="end")
-    ecrire(game_title, 45, jetBold, blanc, 50, 350, align="center",ecran="end")
-    ecrire(game_url, 22, jetBold, blanc, 50, 430, align="center",ecran="end")
-
+    ecrire("end_well", 70, jetBold, blanc, 50, 105, align="center",ecran="end")
+    ecrire("end_completed", 22, jetBold, blanc, 50, 185, align="center",ecran="end")
+    ecrire("end_work", 22, jetBold, blanc, 50, 255, align="center",ecran="end")
+    ecrire("end_share", 22, jetBold, blanc, 50, 285, align="center",ecran="end")
+    place_image(logo_kredas, 415, 355)
+    ecrire(game_url, 22, jetBold, blanc, 50, 525, align="center",ecran="end")
     draw_button("BTN_CLOSE", 20, "ui_close")
-
     place_image(image_cartes, imageCartesX, imageCartesY)
 
     pygame.display.flip()
-
 
 def poseDecor():
     fond = pygame.transform.scale(game_image, window_size)
@@ -672,7 +702,6 @@ def poseDecor():
     place_image(logo_kredas, 63, 65)
     place_image(image_cartes, imageCartesX, imageCartesY)
     place_image(contour_table, pos_contourX, pos_contourY)
-
 
 def poseUI():
     fontLevel = pygame.font.Font(jetBold, 20)
@@ -688,6 +717,11 @@ def poseUI():
     textScore = fontScore.render(f"{score:04}", True, blanc)
     window.blit(textScore, (posScoreX, posScoreY))
 
+    if soundState : 
+        place_image(soundControlON, buttons["BTN_SOUND"].x, buttons["BTN_SOUND"].y)
+    else:
+        place_image(soundControlOFF, buttons["BTN_SOUND"].x, buttons["BTN_SOUND"].y)
+ 
     draw_button("BTN_NEW", 20, "ui_new")
     draw_button("BTN_HELP", 20, "ui_help")
     draw_button("BTN_QUIT", 20, "ui_quit")
@@ -728,7 +762,7 @@ while running:
     if current_state == GameState.PLAYING:
         mouse_pos = pygame.mouse.get_pos()
 
-        # modeDebug()
+        modeDebug()
         poseDecor()
         poseUI()
         show_remaining()
@@ -744,6 +778,20 @@ while running:
                 running = False
 
             elif event.type == pygame.MOUSEBUTTONUP:
+                if click_on_button("BTN_SOUND"):
+                    if soundState : 
+                        volume_FX = 0
+                        volume_ambiance = 0
+                        soundState = False
+                    else:
+                        volume_FX = 0.5
+                        volume_ambiance = 0.5
+                        soundState = True
+
+                pygame.mixer.music.set_volume(volume_ambiance)
+                swap_sound.set_volume(volume_FX)
+                aligner_sound.set_volume(volume_FX)
+
                 if click_on_button("BTN_NEW"):
                     update_game_state()
                     reset_game()
@@ -835,23 +883,35 @@ while running:
                         alignments_for_objectif, alignments_for_score = check_alignments(grid)
 
                         if alignments_for_objectif:
+                            totalSymboles = len(alignments_for_objectif)
 
-                            # Mettre en surbrillance les symboles à supprimer
-                            for pos in alignments_for_objectif:
-                                if len(pos) == 2:
-                                    i, j = pos
-                                    pygame.draw.rect(window, blanc, (positions[i][j][0], positions[i][j][1], cell_size, cell_size), 1)
+                            # for pos in alignments_for_objectif:
+                            #     if len(pos) == 2:
+                            #         i, j = pos
+                            #         pygame.draw.rect(window, blanc, (positions[i][j][0], positions[i][j][1], cell_size, cell_size), 1)
 
                             aligner_sound.set_volume(volume_FX)
                             aligner_sound.play()
 
-                            pygame.display.flip()  # Mettre à jour l'affichage pour montrer la surbrillance
-                            pygame.time.wait(500)
+                            if 4 <= totalSymboles <= 6:
+                                    overlay_image = overlay_S
+                            elif 7 <= totalSymboles <= 12:
+                                overlay_image = overlay_M
+                            elif totalSymboles >= 13:
+                                overlay_image = overlay_XL
+                            else:
+                                overlay_image = None
+
+                            animate_overlay(overlay_image)
+
+                            pygame.display.flip()
+                            pygame.time.wait(50)
 
                             for pos in alignments_for_objectif:
                                 i, j = pos
                                 grid[i][j] = None
 
+                            symboles_suppr_temp = 0
                             symboles_suppr += len(alignments_for_objectif)
                             score += len(alignments_for_score)
                             alignments_for_objectif = None
@@ -864,11 +924,8 @@ while running:
                             if symboles_suppr >= current_objectif:
                                 handle_level_completion()
 
-
     elif current_state == GameState.HELP:
-        print(f"AV > language = {language}\n")
         show_help_screen()
-        print(f"AP > language = {language}\n")
         pygame.display.flip()
 
         for event in pygame.event.get():
@@ -883,7 +940,6 @@ while running:
             if event.type == pygame.MOUSEBUTTONUP:
                 if click_on_button("BTN_CLOSE"):
                     current_state = GameState.PLAYING
-
 
 high_score = update_high_score()
 pygame.mixer.quit()

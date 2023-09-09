@@ -16,6 +16,7 @@ ui_texts = {
 }
 
 help_texts = {
+    "help_lang" : "FR",
     "help_how":"Comment jouer ?",
     "help_rule1line1": "Echangez 2 AS",
     "help_rule1line2": "pour créer un alignement",
