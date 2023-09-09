@@ -21,7 +21,6 @@
 *.jar
 *.rar
 *.tar
-*.zip
 
 # Logs and databases #
 ######################
@@ -49,3 +48,4 @@ Thumbs.db
 *.bak
 /.vscode
 /sources
+config_debug.json

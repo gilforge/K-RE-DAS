@@ -4,23 +4,13 @@
 # Author = Gilles Aubin
 # Website = gilles-aubin.net
 # Version = 1.4.0
-#
-# multi langues
-# orientation horizontale
-# bug de sélection sur les bords
-# affichage des symboles restants
-# combos
-# coupure son
-
-# Délai avant recap
-
+# Source = https://github.com/gilforge/K-RE-DAS
 
 import sys
 import pygame
 import random
 import json
 import math
-import webbrowser
 
 from enum import Enum
 
@@ -32,11 +22,10 @@ pygame.mixer.init()
 # VARIABLES #
 #############
 
-debug = True #>>>> CHANGE AVANT DE PUBLIER <<<<#
-
 game_title = "K-RE-DAS"
 pygame.display.set_caption(game_title)
 
+game_version = "1.4.0"
 game_author = "Gilles Aubin"
 game_url = "https://studiocurieux.itch.io/K-RE-DAS"
 score = 0
@@ -175,10 +164,6 @@ soundState = True
 volume_FX = 0.5
 volume_ambiance = 0.5
 
-if debug :
-    volume_FX = 0
-    volume_ambiance = 0
-
 def load_sound(filename):
     try:
         return pygame.mixer.Sound(filename)
@@ -197,31 +182,10 @@ pygame.mixer.music.set_volume(volume_ambiance)
 # FONCTIONS #
 #############
 
-# >>>>>> MODE DEBUG
-def modeDebug():
-    if debug:
-        mouse_x = mouse_pos[0]
-        mouse_y = mouse_pos[1]
-
-        # Afficher les coordonnées de la souris
-        coords_text = f"X: {mouse_x}, Y: {mouse_y}"
-        font = pygame.font.Font(jetBold, 20)  # Remplacez 'jetBold' par le chemin vers votre police si nécessaire
-        text_surface = font.render(coords_text, True, (255, 255, 255))
-        window.blit(text_surface, (5, 5))
-
-        # Dessiner un réticule en forme de croix
-        reticule_size = 2000  # Taille du réticule (longueur des lignes)
-
-        # Dessiner les lignes horizontales et verticales
-        pygame.draw.line(window, blanc, (mouse_x - reticule_size, mouse_y), (mouse_x + reticule_size, mouse_y), 2)
-        pygame.draw.line(window, blanc, (mouse_x, mouse_y - reticule_size), (mouse_x, mouse_y + reticule_size), 2)
-
-        pygame.display.flip()
-
 def ecrire(champ_texte, taille_texte, police, couleur, posX, posY, align="left", ecran="ui"):
     font = pygame.font.Font(police, taille_texte)
 
-    if champ_texte == game_title or champ_texte == game_url or champ_texte == game_author or champ_texte == high_score or champ_texte == score:
+    if champ_texte == game_title or champ_texte == game_version or champ_texte == game_url or champ_texte == game_author or champ_texte == high_score or champ_texte == score:
         text_surface = font.render(champ_texte, True, couleur)
     elif ecran == "help":
         text_surface = font.render(help_texts[champ_texte], True, couleur)
@@ -339,14 +303,9 @@ def animate_frame(overlay_image, scale_factor, alpha):
 # NIVEAUX #
 ###########
 
-if modeDebug:
-    ConfigJSON = "config_debug.json"
-else:
-    ConfigJSON = "config.json"
-
 def load_config_data():     
     try:
-        with open('config/' + ConfigJSON, 'r') as file:
+        with open('config/config.json', 'r') as file:
             data = json.load(file)
 
             if not any(level.get('progression', 0) == 1 for level in data['config']):
@@ -382,7 +341,7 @@ current_meilleurScore = current_level['meilleurScore']
 current_obstacles = current_level['obstacles']
 
 def save_config_data(config_data):
-    with open('config/' + ConfigJSON, 'w') as file:
+    with open('config/config.json', 'w') as file:
         json.dump(config_data, file, indent=4)
 
 
@@ -632,6 +591,7 @@ def show_splashscreen():
     place_image(logo_studio, 50, 50, position="center")
     ecrire("ui_present", 22, jetBold, blanc, 50, 120, align="center")
     place_image(logo_kredas, demi_ecran, 260, position="center")
+    ecrire(game_version, 22, jetBold, blanc, demi_ecran, 450, align="center")
     place_image(image_cartes, imageCartesX, imageCartesY)
 
     pygame.display.flip()
@@ -731,9 +691,8 @@ def poseUI():
 # LANCEMENT DU JEU #
 ####################
 
-if debug is not True :
-    show_splashscreen()
-    show_language_screen()
+show_splashscreen()
+show_language_screen()
 
 class GameState(Enum):
     PLAYING = 1
@@ -762,7 +721,6 @@ while running:
     if current_state == GameState.PLAYING:
         mouse_pos = pygame.mouse.get_pos()
 
-        modeDebug()
         poseDecor()
         poseUI()
         show_remaining()

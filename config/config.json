@@ -9,7 +9,7 @@
         },
         {
             "level": 2,
-            "objectif": 30,
+            "objectif": 90,
             "progression": 0,
             "meilleurScore": 0,
             "obstacles": [
@@ -25,7 +25,7 @@
         },
         {
             "level": 3,
-            "objectif": 30,
+            "objectif": 90,
             "progression": 0,
             "meilleurScore": 0,
             "obstacles": [
@@ -45,7 +45,7 @@
         },
         {
             "level": 4,
-            "objectif": 30,
+            "objectif": 90,
             "progression": 0,
             "meilleurScore": 0,
             "obstacles": [
@@ -69,7 +69,7 @@
         },
         {
             "level": 5,
-            "objectif": 30,
+            "objectif": 90,
             "progression": 0,
             "meilleurScore": 0,
             "obstacles": [
@@ -97,7 +97,7 @@
         },
         {
             "level": 6,
-            "objectif": 30,
+            "objectif": 90,
             "progression": 0,
             "meilleurScore": 0,
             "obstacles": [
@@ -129,7 +129,7 @@
         },
         {
             "level": 7,
-            "objectif": 30,
+            "objectif": 90,
             "progression": 0,
             "meilleurScore": 0,
             "obstacles": [
@@ -165,7 +165,7 @@
         },
         {
             "level": 8,
-            "objectif": 30,
+            "objectif": 90,
             "progression": 0,
             "meilleurScore": 0,
             "obstacles": [
@@ -205,7 +205,7 @@
         },
         {
             "level": 9,
-            "objectif": 30,
+            "objectif": 90,
             "progression": 0,
             "meilleurScore": 8,
             "obstacles": [
@@ -249,7 +249,7 @@
         },
         {
             "level": 10,
-            "objectif": 30,
+            "objectif": 90,
             "progression": 0,
             "meilleurScore": 0,
             "obstacles": [
