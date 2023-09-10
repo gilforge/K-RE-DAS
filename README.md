@@ -17,7 +17,7 @@
 ![Combo AWESOME](https://github.com/gilforge/K-RE-DAS/blob/master/img/K-RE-DAS_v1.4.0_awesome.png)
 
 ## Intallation
-- Télécharger le fichier ZIP
+- Télécharger le fichier ![K-RE-DAS_win_1.4.0.zip](https://github.com/gilforge/K-RE-DAS/blob/master/K-RE-DAS_win_1.4.0.zip)
 - Décompressez-le
 - Exécutez le fichier K-RE-DAS_1.4.0.exe
 
